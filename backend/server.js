@@ -1,18 +1,24 @@
 import express from 'express';
-import router from './routes/auth.routes.js';
+import dotenv from 'dotenv';
+import authRouter from './routes/auth.routes.js';
+import { connectDB } from './lib/db.js';
+
+dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.get('/' , (req , res)=>{
     res.send("Hello World in Express.js!");
 })
 
-app.use('/api/auth' , router)
+app.use('/api/auth' , authRouter)
+app.use(express.json()) // Middleware to parse JSON bodies
 
 
 app.listen(PORT , ()=>{
     console.log(`Server is running on port ${PORT}`);
+    connectDB();
 })
 
 

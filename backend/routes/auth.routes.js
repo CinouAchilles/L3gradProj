@@ -1,14 +1,14 @@
 import express from 'express';
-import { stat } from 'node:fs';
+import { login, logout, signup } from '../controllers/auth.controller.js';
 
-const router = express.Router();
+const authRouter = express.Router();
 
-router.get('/signup' , (req , res)=>{
-    // res.status(200).send("Signup route");
-    res.json({
-        data: "you hit the signup endpoint",
-        statusCode: 200
-    });
-})
+authRouter.post('/signup' , signup);
 
-export default router;
+authRouter.post('/login' , login);
+
+authRouter.post('/logout' , logout);
+
+export default authRouter;
+
+// gKaUYKfRmLuDdnQs 
