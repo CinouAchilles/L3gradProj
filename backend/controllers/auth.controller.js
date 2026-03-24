@@ -136,47 +136,54 @@ export const login = async (req, res) => {
 };
 
 export const logout = async (req, res) => {
-  try {
-    const refreshToken = req.cookies.refreshToken;
-    if(refreshToken){
-        const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-        await redis.del(`refreshToken:${decoded.userId}`);
+  const token = req.cookies.refreshToken;
+
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+      await redis.del(`refreshToken:${decoded.userId}`);
+    } catch (err) {
     }
-    res.clearCookie("accessToken");
-    res.clearCookie("refreshToken");
-    res.json({ message: "Logged out successfully" });
-  } catch (error) {
-    console.error("Error during logout:", error);
-    res.status(500).json({ message: "Error during logout" });
   }
+
+  res.clearCookie("accessToken", { path: "/" });
+  res.clearCookie("refreshToken", { path: "/" });
+
+  return res.json({ message: "Logged out successfully" });
 };
 
 // token refresh logic
 
 export const refreshToken = async (req, res) => {
-    const refreshToken = req.cookies.refreshToken;
-    if(!refreshToken){
+    const token = req.cookies.refreshToken;
+
+    if (!token) {
         return res.status(401).json({ message: "Refresh token is missing" });
     }
+
     try {
-        const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+        const decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+
         const storedRefreshToken = await redis.get(`refreshToken:${decoded.userId}`);
-        if(storedRefreshToken !== refreshToken){
+
+        if (storedRefreshToken !== token) {
             return res.status(401).json({ message: "Invalid refresh token" });
         }
 
-        const accessToken = jwt.sign({ userId: decoded.userId }, process.env.ACCESS_TOKEN_SECRET, {
-            expiresIn: '15m',
-        });
-        setCookies(res, accessToken, refreshToken);
-        res.json({ message: "Access token refreshed successfully" });
-        
+        const accessToken = jwt.sign(
+            { userId: decoded.userId },
+            process.env.ACCESS_TOKEN_SECRET,
+            { expiresIn: "15m" }
+        );
+
+        setCookies(res, accessToken, token);
+
+        return res.json({ message: "Access token refreshed successfully" });
 
     } catch (error) {
         return res.status(401).json({ message: "Invalid refresh token" });
     }
-}
-
+};
 // TODO: implement getProfile controller logic
 export const getProfile = async (req, res) => {
     // const { email } = req.body;
