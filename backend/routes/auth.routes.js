@@ -1,5 +1,5 @@
 import express from 'express';
-import { getProfile, login, logout, refreshToken, signup } from '../controllers/auth.controller.js';
+import { checkAuth, getProfile, login, logout, refreshToken, signup } from '../controllers/auth.controller.js';
 
 const authRouter = express.Router();
 
@@ -12,6 +12,9 @@ authRouter.post('/logout' , logout);
 authRouter.post('/refresh-token' , refreshToken);
 
 authRouter.post('/profile' , getProfile);
+
+//just a checker for learning purposes to see if the user is authenticated or not, will be removed later
+authRouter.get('/check-auth', checkAuth);
 
 export default authRouter;
 

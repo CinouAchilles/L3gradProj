@@ -205,3 +205,16 @@ export const getProfile = async (req, res) => {
     //     return res.status(500).json({ message: "Error fetching profile" });
     // }
 }
+
+
+export const checkAuth = async (req,  res)=>{
+        // console.log(req); // huge object
+    // console.log("req.headers: " + JSON.stringify(req.headers));
+    // console.log("req body: " + JSON.stringify(req.body));
+    // console.log("req cookies: " + JSON.stringify(req.cookies));
+    if(!req.cookies || !req.cookies.accessToken) {
+        return res.status(401).json({ message: "user is not authenticated" });
+    }
+
+    return res.json({ message: "You are authenticated" });
+}
