@@ -11,7 +11,7 @@ export const protectRoute = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
-    // 🔥 Fetch full user from DB (without password)
+    // Fetch full user from DB (without password)
     const user = await User.findById(decoded.userId).select("-password");
 
     if (!user) {

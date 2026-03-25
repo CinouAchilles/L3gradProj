@@ -16,13 +16,13 @@ const productSchema = new mongoose.Schema({
         min: [0, "Price cannot be negative"],
         required: [true, "Product price is required"],
     },
-   // 🔥 Option 1: URL
+   // Option 1: URL
     imageUrl: {
         type: String,
         default: null,
     },
 
-    // 🔥 Option 2: uploaded image (stored path or cloud URL)
+    // Option 2: uploaded image (stored path or cloud URL)
     imageFile: {
         type: String, // e.g. "/uploads/image.jpg" or Cloudinary URL
         default: null,
