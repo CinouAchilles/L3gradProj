@@ -160,3 +160,79 @@ export const deleteProduct = async (req, res) => {
       .json({ message: "Error deleting product", error: error.message });
   }
 };
+
+export const getRecommendedUnderProduct = async (req, res) => {
+  try {
+    const recommendedProducts = await Product.aggregate([
+      {
+        $sample: { size: 4 }, // Adjust the number of recommended products as needed
+      },
+      {
+        $project: {
+          id: 1,
+          name: 1,
+          description: 1,
+          price: 1,
+          imageUrl: 1,
+          imageFile: 1,
+        },
+      },
+    ]);
+    res.json({ recommendedProducts });
+  } catch (error) {
+    console.error("Error fetching recommended products:", error);
+    res.status(500).json({
+      message: "Error fetching recommended products",
+      error: error.message,
+    });
+  }
+};
+
+export const getByCategoryProducts = async (req, res) => {
+  const { category } = req.params;
+  try {
+    const products = await Product.find({ category: category });
+    res.json({ products });
+  } catch (error) {
+    console.error("Error fetching products by category:", error);
+    res.status(500).json({
+      message: "Error fetching products by category",
+      error: error.message,
+    });
+  }
+};
+
+export const toggleFeaturedStatus = async (req, res) => {
+  const { id } = req.params;
+  if (!id) {
+    return res.status(400).json({ message: "Product ID is required" });
+  }
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: "Invalid product ID" });
+  }
+  try {
+    let product = await Product.findById(id);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+    product.isFeatured = !product.isFeatured;
+    await product.save();
+    await updateFeaturedFromCache();
+    res.json({ message: "Featured status updated successfully", product });
+  } catch (error) {
+    console.error("Error updating featured status:", error);
+    res.status(500).json({
+      message: "Error updating featured status",
+      error: error.message,
+    });
+  }
+};
+
+async function updateFeaturedFromCache() {
+  try {
+    const featruedProduct = await Product.find({ isFeatured: true }).lean();
+    await redis.set("featuredProducts", JSON.stringify(featruedProduct));
+  } catch (error) {
+    console.log("error in update the cache function ");
+  }
+}
