@@ -4,6 +4,7 @@ import authRouter from './routes/auth.routes.js';
 import productRouter from './routes/product.routes.js';
 import { connectDB } from './lib/db.js';
 import cookieParser from 'cookie-parser';
+import cartRouter from './routes/cart.routes.js';
 
 dotenv.config();
 
@@ -17,6 +18,7 @@ app.get('/' , (req , res)=>{
 
 app.use('/api/auth' , authRouter)
 app.use('/api/products' , productRouter)
+app.use('/api/cart' , cartRouter)
 
 
 app.listen(PORT , ()=>{
