@@ -36,9 +36,8 @@ const orderItemSchema = new mongoose.Schema(
 );
 
 /* Auto-calculate lineTotal */
-orderItemSchema.pre("validate", function (next) {
-  this.lineTotal = this.price * this.quantity;
-  next();
+orderItemSchema.pre("validate", function () {
+  this.lineTotal = Number(this.price) * Number(this.quantity);
 });
 
 
@@ -106,21 +105,18 @@ const orderSchema = new mongoose.Schema(
 
     subtotal: {
       type: Number,
-      required: true,
       min: 0,
     },
   },
   { timestamps: true }
 );
 
-orderSchema.pre("validate", function (next) {
-  this.subtotal = this.items.reduce(
-    (acc, item) => acc + item.lineTotal,
-    0
-  );
-  next();
+orderSchema.pre("validate", function () {
+  this.subtotal = this.items.reduce((acc, item) => {
+    const lineTotal = Number(item.lineTotal ?? Number(item.price) * Number(item.quantity));
+    return acc + (Number.isFinite(lineTotal) ? lineTotal : 0);
+  }, 0);
 });
-
 const Order = mongoose.model("Order", orderSchema);
 
 export default Order;

@@ -6,6 +6,7 @@ import { connectDB } from './lib/db.js';
 import cookieParser from 'cookie-parser';
 import cartRouter from './routes/cart.routes.js';
 import analyticsRouter from './routes/analytics.routes.js';
+import orderRouter from './routes/order.routes.js';
 
 dotenv.config();
 

@@ -1,6 +1,21 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
-import { type } from "express/lib/response";
+
+const cartItemSchema = new mongoose.Schema(
+  {
+    product: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Product",
+      required: true,
+    },
+    quantity: {
+      type: Number,
+      default: 1,
+      min: 1,
+    },
+  },
+  { _id: false }
+);
 
 const userSchema = new mongoose.Schema(
   {
@@ -34,24 +49,6 @@ const userSchema = new mongoose.Schema(
     timestamps: true,
   },
 );
-
-const cartItemSchema = new mongoose.Schema(
-  {
-    product: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Product",
-      required: true,
-    },
-    quantity: {
-      type: Number,
-      default: 1,
-      min: 1,
-    },
-  },
-  { _id: false }
-);
-
-
 
 userSchema.pre("save", async function() {
     if (!this.isModified("password")) return;
