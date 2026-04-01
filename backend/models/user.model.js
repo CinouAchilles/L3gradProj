@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
+import { type } from "express/lib/response";
 
 const userSchema = new mongoose.Schema(
   {
@@ -19,18 +20,10 @@ const userSchema = new mongoose.Schema(
       required: [true, "Password is required"],
       minlength: [6, "Password must be at least 6 characters long"],
     },
-    cartItems: [
-      {
-        product: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Product",
-        },
-        quantity: {
-          type: Number,
-          default: 1,
-        },
-      },
-    ],
+    cartItems:{
+      type:[cartItemSchema],
+      default:[]
+    },
     role: {
       type: String,
       enum: ["customer", "admin"],
@@ -41,6 +34,24 @@ const userSchema = new mongoose.Schema(
     timestamps: true,
   },
 );
+
+const cartItemSchema = new mongoose.Schema(
+  {
+    product: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Product",
+      required: true,
+    },
+    quantity: {
+      type: Number,
+      default: 1,
+      min: 1,
+    },
+  },
+  { _id: false }
+);
+
+
 
 userSchema.pre("save", async function() {
     if (!this.isModified("password")) return;
