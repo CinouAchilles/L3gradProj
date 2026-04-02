@@ -1,10 +1,13 @@
-import './App.css'
+import { GlowBackground } from './components/common/GlowBackground'
+import { Navbar } from './components/navigation/Navbar'
 
 function App() {
 
   return (
     <>
-        <p>Hello from App.jsx!</p>
+      <GlowBackground/>
+      <Navbar/>
+        <p className='text-2xl font-bold'>Hello from App.jsx!</p>
     </>
   )
 }
