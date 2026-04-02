@@ -1,15 +1,17 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { FiShoppingCart, FiPackage } from "react-icons/fi";
 
 const MotionSpan = motion.span;
 const MotionH1 = motion.h1;
 const MotionP = motion.p;
 const MotionDiv = motion.div;
+const MotionLink = motion(Link);
 
 export function HeroSection() {
   return (
-    <section className="grid items-center gap-8 lg:grid-cols-2">
-      <div className="space-y-5">
+    <section className="grid items-center gap-8 lg:grid-cols-2 px-6 lg:px-20">
+      <div className="space-y-6">
         <MotionSpan
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -18,13 +20,14 @@ export function HeroSection() {
         >
           Precision Hardware For Gamers And Creators
         </MotionSpan>
+
         <MotionH1
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.05 }}
           className="text-4xl font-bold leading-tight md:text-6xl"
         >
-          Build A Rig That Feels
+          Build A Rig That Feels{" "}
           <span className="block bg-linear-to-r from-cyan-300 via-violet-300 to-fuchsia-300 bg-clip-text text-transparent">
             Unreal In Every Frame
           </span>
@@ -42,20 +45,32 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.15 }}
-          className="flex flex-wrap gap-3"
+          className="flex flex-wrap gap-4"
         >
-          <Link
+          <MotionLink
+            whileHover={{
+              scale: 1.05,
+              boxShadow: "0 0 35px rgba(24,230,245,0.5)",
+            }}
+            whileTap={{ scale: 0.95 }}
             to={"/shop"}
-            className="rounded-xl bg-linear-to-r from-violet-500 to-cyan-500 px-5 py-3 font-semibold text-white shadow-[0_0_28px_rgba(24,230,245,0.35)] transition hover:scale-[1.02]"
+            className="flex items-center gap-2 rounded-xl bg-linear-to-r from-violet-500 to-cyan-500 px-6 py-3 font-semibold text-white shadow-md transition"
           >
-            Shop Now
-          </Link>
-          <Link
+            <FiShoppingCart size={20} /> Shop Now
+          </MotionLink>
+
+          <MotionLink
+            whileHover={{
+              scale: 1.03,
+              backgroundColor: "rgba(255,255,255,0.12)",
+              borderColor: "hsl(248 100% 68%)",
+            }}
+            whileTap={{ scale: 0.97 }}
             to={"/tracking"}
-            className="rounded-xl border border-white/20 bg-white/5 px-5 py-3 font-semibold text-slate-100 transition hover:bg-white/10"
+            className="flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-6 py-3 font-semibold text-slate-100 transition"
           >
-            Track Order
-          </Link>
+            <FiPackage size={20} /> Track Order
+          </MotionLink>
         </MotionDiv>
       </div>
       <MotionDiv
@@ -64,11 +79,30 @@ export function HeroSection() {
         transition={{ duration: 0.55, delay: 0.2 }}
         className="flex justify-center"
       >
-        <div className="w-37.5 h-37.5 bg-red-700">
-
+        <MotionDiv
+          animate={{ y: [0, -10, 0] }} // subtle floating animation
+          transition={{ duration: 2, repeat: Infinity, repeatType: "loop" }}
+          className="w-72 h-72 rounded-2xl bg-linear-to-br from-violet-500 via-cyan-400 to-fuchsia-500 shadow-lg"
+        >
+          {/* You can replace this with an actual image later */}
+        </MotionDiv>
+      </MotionDiv>
+      {/* Scroll Down Indicator */}
+      <MotionDiv
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1, delay: 1 }}
+      >
+        <div className="w-6 h-10 rounded-3xl border-2 border-slate-400 flex justify-center items-start p-1">
+          <MotionDiv
+            animate={{ y: [0, 20, 0] }}
+            transition={{ duration: 1.2, repeat: Infinity, repeatType: "loop" }}
+            className="w-2 h-2 rounded-full bg-slate-400"
+          />
         </div>
+        <span className="mt-2 text-sm text-slate-400">Scroll Down</span>
       </MotionDiv>
     </section>
   );
 }
-

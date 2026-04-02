@@ -3,6 +3,9 @@ import { Navbar } from "./components/navigation/Navbar";
 import { Outlet, Route, Router, Routes } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { HeroSection } from "./components/home/HeroSection";
+import Categories from "./components/home/Categories";
+import WhyChooseUs from "./components/home/WhyChooseUs";
+import Footer from "./components/home/Footer";
 
 function App() {
   return (
@@ -20,6 +23,9 @@ function App() {
         </main>
         <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
       </div>
+        <Categories/>
+        <WhyChooseUs/>
+        <Footer/>
     </div>
   );
 }

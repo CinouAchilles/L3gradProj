@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { FiShoppingCart, FiUser } from "react-icons/fi";
+import { motion } from "framer-motion";
+
+const MotionDiv = motion.div;
 
 const navItems = [
   { label: "Home", to: "/" },
@@ -10,6 +13,7 @@ const navItems = [
 
 export function Navbar() {
   const [search, setSearch] = useState("");
+
   const suggestions = [
     "CPU",
     "GPU",
@@ -22,41 +26,65 @@ export function Navbar() {
 
   return (
     <header className="sticky top-4 z-40 mx-auto w-[95%] max-w-7xl">
-      <div className="navbar glass-card rounded-2xl px-4 md:px-6">
+      <div className="navbar glass-card rounded-2xl px-4 md:px-6 backdrop-blur-xl border border-white/10">
+        
+        {/* Logo */}
         <div className="navbar-start">
-          <Link to="/" className="text-xl font-black tracking-wide text-white">
-            Neon<span className="text-cyan-400">Rig</span>
+          <Link
+            to="/"
+            className="text-xl font-black tracking-wide text-white hover:opacity-90 transition"
+          >
+            Hard<span className="text-cyan-400">Worx</span>
           </Link>
         </div>
 
+        {/* Nav Links */}
         <div className="navbar-center hidden lg:flex">
-          <ul className="menu menu-horizontal gap-2 px-1">
+          <ul className="menu menu-horizontal gap-3 px-1">
             {navItems.map((item) => (
               <li key={item.to}>
                 <NavLink
                   to={item.to}
                   className={({ isActive }) =>
-                    isActive ? "active text-cyan-400" : ""
+                    `relative px-2 py-1 transition ${
+                      isActive ? "text-cyan-400" : "text-slate-200"
+                    }`
                   }
                 >
-                  {item.label}
+                  {({ isActive }) => (
+                    <>
+                      {item.label}
+                      {/* Animated underline */}
+                      {isActive && (
+                        <MotionDiv
+                          layoutId="nav-underline"
+                          className="absolute left-0 right-0 -bottom-1 h-0.5 bg-cyan-400 rounded"
+                        />
+                      )}
+                    </>
+                  )}
                 </NavLink>
               </li>
             ))}
           </ul>
         </div>
 
+        {/* Right Side */}
         <div className="navbar-end gap-2">
-          <form onSubmit={console.log("submit")} className="hidden md:block">
-            <label className="input input-bordered h-10 w-56 lg:w-72">
+          
+          {/* Search */}
+          <form className="hidden md:block">
+            <label className="relative">
               <input
                 type="search"
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(e) => setSearch(e.target.value)}
                 list="header-search-suggestions"
-                placeholder="Search components"
+                placeholder="Search components..."
+                className="h-10 w-56 lg:w-72 rounded-xl bg-white/5 border border-white/10 px-4 text-sm text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:border-cyan-400 transition"
               />
             </label>
+
             <datalist id="header-search-suggestions">
               {suggestions.map((item) => (
                 <option key={item} value={item} />
@@ -64,33 +92,46 @@ export function Navbar() {
             </datalist>
           </form>
 
-          <label
-            htmlFor="cart-drawer"
-            className="btn btn-ghost btn-circle"
-            aria-label="Open cart"
-          >
-            <div className="indicator">
+          {/* Cart */}
+          <MotionDiv whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+            <label
+              htmlFor="cart-drawer"
+              className="btn btn-ghost btn-circle relative"
+              aria-label="Open cart"
+            >
               <FiShoppingCart size={18} />
 
-              <span className="badge badge-xs indicator-item badge-accent">
-                500
+              {/* Animated Badge */}
+              <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-cyan-400 px-1 text-[10px] font-bold text-black">
+                50
               </span>
-            </div>
-          </label>
 
+              {/* Pulse effect */}
+              <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-cyan-400 animate-ping opacity-30"></span>
+            </label>
+          </MotionDiv>
+
+          {/* User Dropdown */}
           <div className="dropdown dropdown-end">
-            <button tabIndex={0} className="btn btn-ghost btn-circle">
-              <FiUser size={18} />
-            </button>
+            <MotionDiv whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+              <button tabIndex={0} className="btn btn-ghost btn-circle">
+                <FiUser size={18} />
+              </button>
+            </MotionDiv>
+
             <ul
               tabIndex={0}
-              className="menu dropdown-content glass-card z-1 mt-3 w-56 rounded-box p-2"
+              className="menu dropdown-content glass-card z-10 mt-3 w-56 rounded-xl p-2 border border-white/10 backdrop-blur-xl"
             >
               <li>
-                <Link to="/login">Login</Link>
+                <Link className="hover:text-cyan-400 transition" to="/login">
+                  Login
+                </Link>
               </li>
               <li>
-                <Link to="/signup">Create account</Link>
+                <Link className="hover:text-cyan-400 transition" to="/signup">
+                  Create account
+                </Link>
               </li>
             </ul>
           </div>
