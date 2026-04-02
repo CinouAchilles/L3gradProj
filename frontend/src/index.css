@@ -1,12 +1,54 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap");
 @import "tailwindcss";
-* {
-  margin: 0;
-  padding: 0;
+@plugin "daisyui";
+
+:root {
+  --font-main: "Inter", sans-serif;
+  --app-bg-start: #070810;
+  --app-bg-mid: #101426;
+  --app-bg-end: #17142a;
+  --text-primary: #e8ecff;
+  --text-muted: #a9b2cf;
+  --neon-cyan: #18e6f5;
+  --neon-purple: #7c5cff;
+}
+
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
 body {
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   margin: 0;
-  padding: 0;
   box-sizing: border-box;
+  color: var(--text-primary);
+  font-family: var(--font-main);
+  background-image: linear-gradient(
+    145deg,
+    var(--app-bg-start) 0%,
+    var(--app-bg-mid) 50%,
+    var(--app-bg-end) 100%
+  );
+}
+
+.bg-app {
+  background-color: transparent;
+}
+
+.text-neon-cyan {
+  color: var(--neon-cyan);
+}
+
+.glass-card {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
 }
