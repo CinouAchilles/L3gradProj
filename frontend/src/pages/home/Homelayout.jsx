@@ -22,10 +22,33 @@ function HomeLayout({ children }) {
         </main>
 
         <Footer />
-        <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
       </div>
 
       <CartDrawer />
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: "rgba(24, 230, 245, 0.1)", // neon-cyan glass effect
+            color: "#18e6f5",
+            border: "1px solid rgba(24, 230, 245, 0.3)",
+            backdropFilter: "blur(12px)",
+            fontFamily: "var(--font-main)",
+            fontWeight: 600,
+            padding: "12px 16px",
+            boxShadow: "0 0 12px rgba(24, 230, 245, 0.25)",
+          },
+          error: {
+            style: {
+              background: "rgba(255, 50, 50, 0.15)",
+              color: "#ff5555",
+              border: "1px solid rgba(255, 50, 50, 0.3)",
+              boxShadow: "0 0 12px rgba(255, 50, 50, 0.25)"
+            },
+          },
+        }}
+      />
     </div>
   );
 }
