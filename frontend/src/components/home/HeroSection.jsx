@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { FiShoppingCart, FiPackage } from "react-icons/fi";
+import GPUModel from "../Mod/GPUModel";
 
 const MotionSpan = motion.span;
 const MotionH1 = motion.h1;
@@ -10,8 +11,13 @@ const MotionLink = motion(Link);
 
 export function HeroSection() {
   return (
-    <section className="grid items-center gap-8 lg:grid-cols-2 px-6 lg:px-20">
-      <div className="space-y-6">
+    <section 
+    className="grid min-h-[82vh] items-center gap-12 py-4 lg:grid-cols-[1.02fr_0.98fr] lg:gap-14 lg:px-4 xl:px-10"
+    style={{
+      rowGap: 0
+    }}
+    >
+      <div className="space-y-7">
         <MotionSpan
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -25,7 +31,7 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.05 }}
-          className="text-4xl font-bold leading-tight md:text-6xl"
+          className="text-4xl font-bold leading-tight md:text-6xl xl:text-7xl"
         >
           Build A Rig That Feels{" "}
           <span className="block bg-linear-to-r from-cyan-300 via-violet-300 to-fuchsia-300 bg-clip-text text-transparent">
@@ -36,7 +42,7 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.1 }}
-          className="max-w-xl text-slate-300"
+          className="max-w-2xl text-slate-300"
         >
           Explore premium components, tuned bundles, and performance-first parts
           selected for gamers, beginners, and enthusiasts.
@@ -77,18 +83,18 @@ export function HeroSection() {
         initial={{ opacity: 0, x: 18 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.55, delay: 0.2 }}
-        className="flex justify-center"
+        className="flex justify-center lg:justify-end"
       >
         <MotionDiv
-          animate={{ y: [0, -10, 0] }} // subtle floating animation
-          transition={{ duration: 2, repeat: Infinity, repeatType: "loop" }}
-          className="w-72 h-72 rounded-2xl bg-linear-to-br from-violet-500 via-cyan-400 to-fuchsia-500 shadow-lg"
+          animate={{ y: [0, -8, 0] }}
+          transition={{ duration: 3.2, repeat: Infinity, repeatType: "loop" }}
+          className="relative h-80 w-full max-w-xl  sm:h-96 lg:h-128"
         >
-          {/* You can replace this with an actual image later */}
+          <GPUModel />
         </MotionDiv>
       </MotionDiv>
       {/* Scroll Down Indicator */}
-      <div className="opacity-100 lg:col-span-2 text-center items-center">
+      <div className="opacity-100 lg:col-span-2 text-center items-center hidden lg:block mt-18">
         <MotionDiv
           className="flex flex-col items-center"
           initial={{ opacity: 0, y: 30 }}

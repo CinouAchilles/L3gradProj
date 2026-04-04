@@ -12,7 +12,18 @@
   --neon-cyan: #18e6f5;
   --neon-purple: #7c5cff;
 }
+/* Desktop visual density tweak (simulate ~90-95% zoom feel) */
+@media (min-width: 1024px) {
+  html {
+    font-size: 93.75%; /* 15px base instead of 16px */
+  }
+}
 
+@media (min-width: 1440px) {
+  html {
+    font-size: 90%; /* closer to the look you liked */
+  }
+}
 *,
 *::before,
 *::after {
