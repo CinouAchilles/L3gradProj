@@ -88,21 +88,27 @@ export function HeroSection() {
         </MotionDiv>
       </MotionDiv>
       {/* Scroll Down Indicator */}
-      <MotionDiv
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center"
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1, delay: 1 }}
-      >
-        <div className="w-6 h-10 rounded-3xl border-2 border-slate-400 flex justify-center items-start p-1">
-          <MotionDiv
-            animate={{ y: [0, 20, 0] }}
-            transition={{ duration: 1.2, repeat: Infinity, repeatType: "loop" }}
-            className="w-2 h-2 rounded-full bg-slate-400"
-          />
-        </div>
-        <span className="mt-2 text-sm text-slate-400">Scroll Down</span>
-      </MotionDiv>
+      <div className="opacity-100 lg:col-span-2 text-center items-center">
+        <MotionDiv
+          className="flex flex-col items-center"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 1 }}
+        >
+          <div className="w-6 h-10 rounded-3xl border-2 border-slate-400 flex justify-center items-start p-1">
+            <MotionDiv
+              animate={{ y: [0, 20, 0] }}
+              transition={{
+                duration: 1.5,
+                repeat: Infinity,
+                repeatType: "loop",
+              }}
+              className="w-2 h-2 rounded-full bg-slate-400"
+            />
+          </div>
+          <span className="mt-2 text-sm text-slate-400">Scroll Down</span>
+        </MotionDiv>
+      </div>
     </section>
   );
 }
