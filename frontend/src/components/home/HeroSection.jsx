@@ -72,7 +72,7 @@ export function HeroSection() {
               borderColor: "hsl(248 100% 68%)",
             }}
             whileTap={{ scale: 0.97 }}
-            to={"/tracking"}
+            to={"/track"}
             className="flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-6 py-3 font-semibold text-slate-100 transition"
           >
             <FiPackage size={20} /> Track Order
