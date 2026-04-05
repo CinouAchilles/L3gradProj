@@ -1,26 +1,36 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   HiOutlineChartBar,
   HiOutlineCurrencyDollar,
-  HiOutlineSparkles,
   HiOutlineShoppingBag,
+  HiOutlineSparkles,
   HiOutlineUsers,
+  HiPencil,
+  HiPlus,
+  HiX,
 } from "react-icons/hi";
 import {
-  BarChart,
   Bar,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
+  BarChart,
+  CartesianGrid,
   Cell,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
 } from "recharts";
+import {
+  AdminStatCard,
+  AnimatedGlassPanel,
+  GlassPanel,
+  SectionHeader,
+  StatusPill,
+} from "../../components/admin/AdminDashboardUi";
 
 const MotionH1 = motion.h1;
 const MotionDiv = motion.div;
@@ -43,14 +53,24 @@ const statusColors = {
   cancelled: "#fb7185",
 };
 
+const emptyProductForm = {
+  name: "",
+  category: "",
+  description: "",
+  imageUrl: "",
+  price: "",
+  isFeatured: false,
+};
+
 export default function AdminDashboard() {
   const [tab, setTab] = useState("analytics");
+  const [isProductFormOpen, setIsProductFormOpen] = useState(false);
+  const [editingProductId, setEditingProductId] = useState(null);
+  const [productForm, setProductForm] = useState(emptyProductForm);
 
-  // 🔥 Mock Data
   const analytics = {
     totalRevenue: 1250000,
     totalOrders: 320,
-    totalProducts: 45,
     totalUsers: 120,
     topSellingProducts: [
       { name: "iPhone 13", totalSold: 50 },
@@ -99,27 +119,123 @@ export default function AdminDashboard() {
   ]);
 
   const [products, setProducts] = useState([
-    { _id: "1", name: "iPhone 13", price: 180000, isFeatured: true },
-    { _id: "2", name: "AirPods", price: 35000, isFeatured: false },
+    {
+      _id: "1",
+      name: "iPhone 13",
+      category: "Phones",
+      description: "6.1-inch OLED, A15 chip, dual camera",
+      imageUrl: "https://via.placeholder.com/250x250.png?text=iPhone+13",
+      price: 180000,
+      isFeatured: true,
+    },
+    {
+      _id: "2",
+      name: "AirPods Pro",
+      category: "Accessories",
+      description: "ANC earbuds with wireless charging case",
+      imageUrl: "https://via.placeholder.com/250x250.png?text=AirPods+Pro",
+      price: 35000,
+      isFeatured: false,
+    },
   ]);
 
-  // UI-only actions
   const updateOrderStatus = (id, status) => {
-    setOrders((prev) =>
-      prev.map((o) => (o._id === id ? { ...o, status } : o))
-    );
+    setOrders((prev) => prev.map((o) => (o._id === id ? { ...o, status } : o)));
   };
 
   const toggleFeatured = (id) => {
     setProducts((prev) =>
-      prev.map((p) =>
-        p._id === id ? { ...p, isFeatured: !p.isFeatured } : p
-      )
+      prev.map((p) => (p._id === id ? { ...p, isFeatured: !p.isFeatured } : p))
     );
   };
 
   const deleteProduct = (id) => {
     setProducts((prev) => prev.filter((p) => p._id !== id));
+    if (editingProductId === id) {
+      closeProductForm();
+    }
+  };
+
+  const openCreateProduct = () => {
+    setEditingProductId(null);
+    setProductForm(emptyProductForm);
+    setIsProductFormOpen(true);
+  };
+
+  const openEditProduct = (product) => {
+    setEditingProductId(product._id);
+    setProductForm({
+      name: product.name,
+      category: product.category,
+      description: product.description,
+      imageUrl: product.imageUrl,
+      price: String(product.price),
+      isFeatured: product.isFeatured,
+    });
+    setIsProductFormOpen(true);
+  };
+
+  const closeProductForm = () => {
+    setIsProductFormOpen(false);
+    setEditingProductId(null);
+    setProductForm(emptyProductForm);
+  };
+
+  const onProductFormChange = (event) => {
+    const { name, type, checked, value } = event.target;
+    setProductForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const saveProduct = () => {
+    const cleanedName = productForm.name.trim();
+    const cleanedCategory = productForm.category.trim();
+    const cleanedDescription = productForm.description.trim();
+    const cleanedImage = productForm.imageUrl.trim();
+    const numericPrice = Number(productForm.price);
+
+    if (!cleanedName || !cleanedCategory || !cleanedDescription || !cleanedImage) {
+      return;
+    }
+
+    if (!Number.isFinite(numericPrice) || numericPrice < 0) {
+      return;
+    }
+
+    if (editingProductId) {
+      setProducts((prev) =>
+        prev.map((p) =>
+          p._id === editingProductId
+            ? {
+                ...p,
+                name: cleanedName,
+                category: cleanedCategory,
+                description: cleanedDescription,
+                imageUrl: cleanedImage,
+                price: numericPrice,
+                isFeatured: productForm.isFeatured,
+              }
+            : p
+        )
+      );
+    } else {
+      setProducts((prev) => [
+        {
+          _id: `prod-${Date.now().toString(36)}`,
+          name: cleanedName,
+          category: cleanedCategory,
+          description: cleanedDescription,
+          imageUrl: cleanedImage,
+          price: numericPrice,
+          isFeatured: productForm.isFeatured,
+        },
+        ...prev,
+      ]);
+    }
+
+    closeProductForm();
   };
 
   const stats = [
@@ -135,7 +251,7 @@ export default function AdminDashboard() {
     },
     {
       label: "Products",
-      value: analytics.totalProducts,
+      value: products.length,
       icon: HiOutlineChartBar,
     },
     {
@@ -177,7 +293,7 @@ export default function AdminDashboard() {
     : 0;
 
   const avgOrderValue = Math.round(
-    analytics.totalRevenue / Math.max(analytics.totalOrders, 1),
+    analytics.totalRevenue / Math.max(analytics.totalOrders, 1)
   );
   const userToOrderRatio =
     analytics.totalUsers > 0
@@ -224,6 +340,17 @@ export default function AdminDashboard() {
     }
   };
 
+  const isProductFormValid = useMemo(() => {
+    return (
+      productForm.name.trim() &&
+      productForm.category.trim() &&
+      productForm.description.trim() &&
+      productForm.imageUrl.trim() &&
+      Number.isFinite(Number(productForm.price)) &&
+      Number(productForm.price) >= 0
+    );
+  }, [productForm]);
+
   return (
     <div className="container-main section-padding relative">
       <div className="pointer-events-none absolute inset-0 -z-10">
@@ -234,7 +361,7 @@ export default function AdminDashboard() {
       <MotionH1
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-3xl font-bold mb-3 sm:text-4xl"
+        className="mb-3 text-3xl font-bold sm:text-4xl"
       >
         Admin <span className="text-gradient">Dashboard</span>
       </MotionH1>
@@ -244,23 +371,15 @@ export default function AdminDashboard() {
         panel designed with your storefront visual style.
       </p>
 
-      <div className="grid grid-cols-2 gap-4 mb-8 lg:grid-cols-4">
+      <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((s, i) => (
-          <MotionDiv
+          <AdminStatCard
             key={s.label}
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
-            className="rounded-2xl border border-white/10 bg-slate-900/60 p-5 backdrop-blur-xl shadow-[0_10px_28px_rgba(0,0,0,0.25)]"
-          >
-            <div className="mb-3 inline-flex rounded-lg border border-cyan-300/20 bg-cyan-300/10 p-2 text-cyan-300">
-              <s.icon className="h-5 w-5" />
-            </div>
-            <p className="text-lg font-bold text-slate-100 sm:text-xl">{s.value}</p>
-            <p className="text-xs uppercase tracking-[0.18em] text-slate-400 mt-1">
-              {s.label}
-            </p>
-          </MotionDiv>
+            icon={s.icon}
+            label={s.label}
+            value={s.value}
+            delay={i * 0.05}
+          />
         ))}
       </div>
 
@@ -288,41 +407,32 @@ export default function AdminDashboard() {
         >
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {analyticsHighlights.map((item) => (
-              <div
+              <GlassPanel
                 key={item.label}
-                className="rounded-2xl border border-white/10 bg-slate-900/60 p-5 backdrop-blur-xl"
+                className="p-5"
               >
                 <p className="text-xs uppercase tracking-[0.16em] text-slate-400">
                   {item.label}
                 </p>
                 <p className="mt-2 text-2xl font-bold text-slate-100">{item.value}</p>
                 <p className="mt-2 text-xs text-slate-400">{item.note}</p>
-              </div>
+              </GlassPanel>
             ))}
           </div>
 
           <div className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
-            <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-6 backdrop-blur-xl">
-              <div className="mb-4 flex items-center gap-2">
-                <HiOutlineSparkles className="h-4 w-4 text-cyan-300" />
-                <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-300">
-                  Revenue Trend (6 Months)
-                </h3>
-              </div>
+            <GlassPanel className="p-6">
+              <SectionHeader
+                icon={HiOutlineSparkles}
+                title="Revenue Trend (6 Months)"
+              />
 
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={monthlyRevenue}>
                     <CartesianGrid stroke="rgba(255,255,255,0.08)" strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="month"
-                      stroke="#94a3b8"
-                      tick={{ fill: "#94a3b8", fontSize: 12 }}
-                    />
-                    <YAxis
-                      stroke="#94a3b8"
-                      tick={{ fill: "#94a3b8", fontSize: 12 }}
-                    />
+                    <XAxis dataKey="month" stroke="#94a3b8" tick={{ fill: "#94a3b8", fontSize: 12 }} />
+                    <YAxis stroke="#94a3b8" tick={{ fill: "#94a3b8", fontSize: 12 }} />
                     <Tooltip />
                     <Line
                       type="monotone"
@@ -335,15 +445,10 @@ export default function AdminDashboard() {
                   </LineChart>
                 </ResponsiveContainer>
               </div>
-            </div>
+            </GlassPanel>
 
-            <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-6 backdrop-blur-xl">
-              <div className="mb-4 flex items-center gap-2">
-                <HiOutlineSparkles className="h-4 w-4 text-cyan-300" />
-                <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-300">
-                  Order Status
-                </h3>
-              </div>
+            <GlassPanel className="p-6">
+              <SectionHeader icon={HiOutlineSparkles} title="Order Status" />
 
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
@@ -364,45 +469,29 @@ export default function AdminDashboard() {
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-            </div>
+            </GlassPanel>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-6 backdrop-blur-xl">
-            <div className="mb-4 flex items-center gap-2">
-              <HiOutlineSparkles className="h-4 w-4 text-cyan-300" />
-              <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-300">
-                Top Selling Products
-              </h3>
-            </div>
+          <GlassPanel className="p-6">
+            <SectionHeader icon={HiOutlineSparkles} title="Top Selling Products" />
 
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={analytics.topSellingProducts}>
                   <CartesianGrid stroke="rgba(255,255,255,0.08)" strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="name"
-                    stroke="#94a3b8"
-                    tick={{ fill: "#94a3b8", fontSize: 12 }}
-                  />
-                  <YAxis
-                    stroke="#94a3b8"
-                    tick={{ fill: "#94a3b8", fontSize: 12 }}
-                  />
+                  <XAxis dataKey="name" stroke="#94a3b8" tick={{ fill: "#94a3b8", fontSize: 12 }} />
+                  <YAxis stroke="#94a3b8" tick={{ fill: "#94a3b8", fontSize: 12 }} />
                   <Tooltip />
                   <Bar dataKey="totalSold" fill="#22d3ee" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </div>
+          </GlassPanel>
         </MotionDiv>
       )}
 
       {tab === "orders" && (
-        <MotionDiv
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-900/60 p-2 backdrop-blur-xl"
-        >
+        <AnimatedGlassPanel className="overflow-x-auto p-2">
           <table className="w-full min-w-170 text-sm text-slate-200">
             <thead>
               <tr className="text-left text-xs uppercase tracking-[0.16em] text-slate-400">
@@ -422,11 +511,10 @@ export default function AdminDashboard() {
                   </td>
                   <td className="px-4 py-3">{o.subtotal.toLocaleString()} DA</td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase ${statusBadgeClass(o.status)}`}
-                    >
-                      {o.status.replace(/_/g, " ")}
-                    </span>
+                    <StatusPill
+                      className={statusBadgeClass(o.status)}
+                      label={o.status.replace(/_/g, " ")}
+                    />
                   </td>
                   <td className="px-4 py-3">
                     <select
@@ -445,53 +533,184 @@ export default function AdminDashboard() {
               ))}
             </tbody>
           </table>
-        </MotionDiv>
+        </AnimatedGlassPanel>
       )}
 
       {tab === "products" && (
-        <MotionDiv
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-900/60 p-2 backdrop-blur-xl"
-        >
-          <table className="w-full min-w-170 text-sm text-slate-200">
-            <thead>
-              <tr className="text-left text-xs uppercase tracking-[0.16em] text-slate-400">
-                <th className="px-4 py-3">Product</th>
-                <th className="px-4 py-3">Price</th>
-                <th className="px-4 py-3">Featured</th>
-                <th className="px-4 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((p) => (
-                <tr key={p._id} className="border-t border-white/8">
-                  <td className="px-4 py-3 font-medium">{p.name}</td>
-                  <td className="px-4 py-3">{p.price.toLocaleString()} DA</td>
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={() => toggleFeatured(p._id)}
-                      className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
-                        p.isFeatured
-                          ? "border-amber-300/30 bg-amber-300/15 text-amber-300"
-                          : "border-slate-500/40 bg-slate-500/15 text-slate-300"
-                      }`}
-                    >
-                      {p.isFeatured ? "Featured" : "Not featured"}
-                    </button>
-                  </td>
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={() => deleteProduct(p._id)}
-                      className="rounded-lg border border-rose-300/30 bg-rose-400/10 px-3 py-1.5 text-xs font-semibold text-rose-300 transition hover:bg-rose-400/20"
-                    >
-                      Delete
-                    </button>
-                  </td>
+        <MotionDiv initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-900/60 p-4 backdrop-blur-xl">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Catalog Controls</p>
+              <h3 className="mt-1 text-lg font-semibold text-white">Manage products visually</h3>
+            </div>
+            <button
+              onClick={openCreateProduct}
+              className="inline-flex items-center gap-2 rounded-xl bg-linear-to-r from-violet-500 to-cyan-500 px-4 py-2 text-sm font-semibold text-white"
+            >
+              <HiPlus className="h-4 w-4" />
+              Add Product
+            </button>
+          </div>
+
+          {isProductFormOpen && (
+            <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-5 backdrop-blur-xl">
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                    {editingProductId ? "Edit Product" : "Create Product"}
+                  </p>
+                  <h4 className="mt-1 text-lg font-semibold text-white">
+                    {editingProductId ? "Update product info" : "Add a new product"}
+                  </h4>
+                </div>
+                <button
+                  onClick={closeProductForm}
+                  className="rounded-lg border border-white/10 p-2 text-slate-300 hover:bg-white/5"
+                >
+                  <HiX className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <label className="space-y-2">
+                  <span className="text-sm text-slate-300">Name</span>
+                  <input
+                    name="name"
+                    value={productForm.name}
+                    onChange={onProductFormChange}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:border-cyan-400/40 focus:outline-none"
+                    placeholder="Product name"
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-sm text-slate-300">Category</span>
+                  <input
+                    name="category"
+                    value={productForm.category}
+                    onChange={onProductFormChange}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:border-cyan-400/40 focus:outline-none"
+                    placeholder="Phones, Accessories..."
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-sm text-slate-300">Price (DA)</span>
+                  <input
+                    name="price"
+                    type="number"
+                    min="0"
+                    value={productForm.price}
+                    onChange={onProductFormChange}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:border-cyan-400/40 focus:outline-none"
+                    placeholder="0"
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-sm text-slate-300">Image URL</span>
+                  <input
+                    name="imageUrl"
+                    value={productForm.imageUrl}
+                    onChange={onProductFormChange}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:border-cyan-400/40 focus:outline-none"
+                    placeholder="https://..."
+                  />
+                </label>
+              </div>
+
+              <label className="mt-4 block space-y-2">
+                <span className="text-sm text-slate-300">Description</span>
+                <textarea
+                  name="description"
+                  rows={3}
+                  value={productForm.description}
+                  onChange={onProductFormChange}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:border-cyan-400/40 focus:outline-none"
+                  placeholder="Short product summary"
+                />
+              </label>
+
+              <label className="mt-4 inline-flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
+                <input
+                  type="checkbox"
+                  name="isFeatured"
+                  checked={productForm.isFeatured}
+                  onChange={onProductFormChange}
+                  className="h-4 w-4"
+                />
+                Mark as featured
+              </label>
+
+              <div className="mt-5 flex flex-wrap gap-3">
+                <button
+                  onClick={saveProduct}
+                  disabled={!isProductFormValid}
+                  className="inline-flex items-center gap-2 rounded-xl bg-linear-to-r from-violet-500 to-cyan-500 px-5 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {editingProductId ? "Save Changes" : "Create Product"}
+                </button>
+                <button
+                  onClick={closeProductForm}
+                  className="rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold text-slate-200"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-900/60 p-2 backdrop-blur-xl">
+            <table className="w-full min-w-170 text-sm text-slate-200">
+              <thead>
+                <tr className="text-left text-xs uppercase tracking-[0.16em] text-slate-400">
+                  <th className="px-4 py-3">Product</th>
+                  <th className="px-4 py-3">Category</th>
+                  <th className="px-4 py-3">Price</th>
+                  <th className="px-4 py-3">Featured</th>
+                  <th className="px-4 py-3">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {products.map((p) => (
+                  <tr key={p._id} className="border-t border-white/8">
+                    <td className="px-4 py-3">
+                      <p className="font-medium">{p.name}</p>
+                      <p className="max-w-52 truncate text-xs text-slate-400">{p.description}</p>
+                    </td>
+                    <td className="px-4 py-3 text-slate-300">{p.category}</td>
+                    <td className="px-4 py-3">{p.price.toLocaleString()} DA</td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => toggleFeatured(p._id)}
+                        className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                          p.isFeatured
+                            ? "border-amber-300/30 bg-amber-300/15 text-amber-300"
+                            : "border-slate-500/40 bg-slate-500/15 text-slate-300"
+                        }`}
+                      >
+                        {p.isFeatured ? "Featured" : "Not featured"}
+                      </button>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => openEditProduct(p)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-cyan-300/30 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-300 transition hover:bg-cyan-400/20"
+                        >
+                          <HiPencil className="h-3.5 w-3.5" />
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => deleteProduct(p._id)}
+                          className="rounded-lg border border-rose-300/30 bg-rose-400/10 px-3 py-1.5 text-xs font-semibold text-rose-300 transition hover:bg-rose-400/20"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </MotionDiv>
       )}
     </div>

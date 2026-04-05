@@ -139,6 +139,102 @@ export const createProduct = async (req, res) => {
   }
 };
 
+export const updateProduct = async (req, res) => {
+  const { id } = req.params;
+
+  if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: "Invalid product ID" });
+  }
+
+  try {
+    const product = await Product.findById(id);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    const {
+      name,
+      description,
+      price,
+      category,
+      isFeatured,
+      imageUrl,
+      imageFile,
+    } = req.body || {};
+
+    if (imageUrl && imageFile) {
+      return res.status(400).json({
+        message: "Only one of imageUrl or imageFile should be provided.",
+      });
+    }
+
+    if (name !== undefined) {
+      if (!name.trim()) {
+        return res.status(400).json({ message: "Product name cannot be empty" });
+      }
+      product.name = name;
+    }
+
+    if (description !== undefined) {
+      if (!description.trim()) {
+        return res
+          .status(400)
+          .json({ message: "Product description cannot be empty" });
+      }
+      product.description = description;
+    }
+
+    if (category !== undefined) {
+      if (!category.trim()) {
+        return res.status(400).json({ message: "Product category cannot be empty" });
+      }
+      product.category = category;
+    }
+
+    if (price !== undefined) {
+      if (isNaN(price) || Number(price) < 0) {
+        return res
+          .status(400)
+          .json({ message: "Price must be a valid non-negative number" });
+      }
+      product.price = Number(price);
+    }
+
+    if (isFeatured !== undefined) {
+      product.isFeatured = Boolean(isFeatured);
+    }
+
+    if (imageUrl !== undefined) {
+      product.imageUrl = imageUrl || null;
+      product.imageFile = null;
+    }
+
+    if (imageFile) {
+      const result = await cloudinary.uploader.upload(imageFile, {
+        folder: "productsGraduationProject",
+      });
+      product.imageFile = result.secure_url;
+      product.imageUrl = null;
+    }
+
+    await product.save();
+
+    if (product.isFeatured) {
+      await updateFeaturedFromCache();
+    }
+
+    return res.status(200).json({
+      message: "Product updated successfully",
+      product,
+    });
+  } catch (error) {
+    console.error("Error updating product:", error);
+    return res
+      .status(500)
+      .json({ message: "Error updating product", error: error.message });
+  }
+};
+
 export const deleteProduct = async (req, res) => {
   const { id } = req.params;
 

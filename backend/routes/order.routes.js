@@ -8,8 +8,7 @@ const orderRouter = express.Router();
 orderRouter.post("/" , protectRoute , createOrder);
 orderRouter.get('/myorders' , protectRoute , getMyOrders);
 orderRouter.get("/track/:trackingCode", getOrderByTrackingCode);
-orderRouter.get("/", protectRoute, getAllOrders);
-//TODO: add admin only middleware here later
-orderRouter.patch("/:id/status", protectRoute, updateOrderStatus);
+orderRouter.get("/", protectRoute, adminOnly, getAllOrders);
+orderRouter.patch("/:id/status", protectRoute, adminOnly, updateOrderStatus);
 
 export default orderRouter;
