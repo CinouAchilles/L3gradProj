@@ -8,6 +8,9 @@ import TrackOrder from "./pages/Track/TrackOrder.jsx";
 import AdminDashboard from "./pages/Admin/AdminDashboard.jsx";
 import Shop from "./pages/cart/Shop.jsx";
 import ScrollToTop from "./components/common/ScrollToTop.jsx";
+import Cart from "./pages/cart/Cart.jsx";
+import Checkout from "./pages/cart/Checkout.jsx";
+import ProductDetails from "./pages/product/ProductDetails.jsx";
 
 function App() {
   return (
@@ -20,7 +23,9 @@ function App() {
         <Route path="/track/:trackingCode" element={<TrackOrder/>} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/shop" element={<Shop />} />
-        {"not found route"}
+        <Route path="/product/:id" element={<ProductDetails />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/checkout" element={<Checkout />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </HomeLayout>
