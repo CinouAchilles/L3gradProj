@@ -1,4 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { useEffect } from "react";
+
 import { HeroSection } from "./components/home/HeroSection.jsx";
 import HomeLayout from "./pages/home/Homelayout.jsx";
 import { NotFound } from "./pages/NotFound.jsx";
@@ -11,17 +13,18 @@ import ScrollToTop from "./components/common/ScrollToTop.jsx";
 import Cart from "./pages/cart/Cart.jsx";
 import Checkout from "./pages/cart/Checkout.jsx";
 import ProductDetails from "./pages/product/ProductDetails.jsx";
-import { useUserStore } from "./stores/useUserStore.jsx";
-import { useEffect } from "react";
 import LoadingSpinner from "./components/common/LoadingSpinner.jsx";
+
+import { useUserStore } from "./stores/useUserStore.jsx";
 
 function App() {
   const { user, checkAuth, checkingAuth } = useUserStore();
 
   useEffect(() => {
-    checkAuth(); // Check if the user is authenticated when the app loads
+    checkAuth();
   }, [checkAuth]);
 
+  // ⏳ While checking auth
   if (checkingAuth) {
     return (
       <div className="flex min-h-screen items-center justify-center px-4">
@@ -38,19 +41,53 @@ function App() {
   return (
     <HomeLayout>
       <ScrollToTop />
+
       <Routes>
+        {/* 🌐 Public */}
         <Route path="/" element={<HeroSection />} />
-        <Route path="/signup" element={!user ? <Signup /> : <Navigate to="/" replace /> } />
+        <Route path="/shop" element={<Shop />} />
+        <Route path="/product/:id" element={<ProductDetails />} />
+        <Route path="/track/:trackingCode" element={<TrackOrder />} />
+
+        {/* 🔓 Auth  */}
         <Route
           path="/login"
           element={!user ? <Login /> : <Navigate to="/" replace />}
         />
-        <Route path="/track/:trackingCode" element={<TrackOrder />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/shop" element={<Shop />} />
-        <Route path="/product/:id" element={<ProductDetails />} />
-        <Route path="/cart" element={<Cart />} />
-        <Route path="/checkout" element={<Checkout />} />
+        <Route
+          path="/signup"
+          element={!user ? <Signup /> : <Navigate to="/" replace />}
+        />
+
+        {/* 🔐 Protected routes */}
+        <Route
+          path="/profile"
+          element={user ? <h1>Profile</h1> : <Navigate to="/login" replace />}
+        />
+
+        <Route
+          path="/cart"
+          element={user ? <Cart /> : <Navigate to="/login" replace />}
+        />
+
+        <Route
+          path="/checkout"
+          element={user ? <Checkout /> : <Navigate to="/login" replace />}
+        />
+
+        {/* 👑 Admin route */}
+        <Route
+          path="/admin"
+          element={
+            user && user.role === "admin" ? (
+              <AdminDashboard />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        {/* ❌ Not found */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </HomeLayout>

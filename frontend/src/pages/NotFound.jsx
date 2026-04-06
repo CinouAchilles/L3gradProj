@@ -5,7 +5,7 @@ import { FiArrowLeft, FiHome } from "react-icons/fi";
 const MotionDiv = motion.div;
 const MotionH1 = motion.h1;
 const MotionP = motion.p;
-const MotionLink = motion(Link);
+const MotionLink = motion.create(Link);
 
 export function NotFound() {
   return (

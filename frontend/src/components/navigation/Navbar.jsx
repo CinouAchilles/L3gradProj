@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { FiShoppingCart, FiUser } from "react-icons/fi";
 import { motion } from "framer-motion";
+import { useUserStore } from "../../stores/useUserStore";
 
 const MotionDiv = motion.div;
 
@@ -13,6 +14,8 @@ const navItems = [
 
 export function Navbar() {
   const [search, setSearch] = useState("");
+  const { user , logout } = useUserStore();
+  const role = user?.role;
 
   const suggestions = [
     "CPU",
@@ -27,7 +30,6 @@ export function Navbar() {
   return (
     <header className="sticky top-4 z-40 mx-auto w-[95%] max-w-7xl">
       <div className="navbar glass-card rounded-2xl px-4 md:px-6 backdrop-blur-xl border border-white/10">
-        
         {/* Logo */}
         <div className="navbar-start">
           <Link
@@ -71,7 +73,6 @@ export function Navbar() {
 
         {/* Right Side */}
         <div className="navbar-end gap-2">
-          
           {/* Search */}
           <form className="hidden md:block">
             <label className="relative">
@@ -123,16 +124,58 @@ export function Navbar() {
               tabIndex={0}
               className="menu dropdown-content glass-card z-10 mt-3 w-56 rounded-xl p-2 border border-white/10 backdrop-blur-xl"
             >
-              <li>
-                <Link className="hover:text-cyan-400 transition" to="/login">
-                  Login
-                </Link>
-              </li>
-              <li>
-                <Link className="hover:text-cyan-400 transition" to="/signup">
-                  Create account
-                </Link>
-              </li>
+              {!user ? (
+                <>
+                  <li>
+                    <Link
+                      className="hover:text-cyan-400 transition"
+                      to="/login"
+                    >
+                      Login
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      className="hover:text-cyan-400 transition"
+                      to="/signup"
+                    >
+                      Create account
+                    </Link>
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li>
+                    <Link
+                      className="hover:text-cyan-400 transition"
+                      to="/profile"
+                    >
+                      Profile
+                    </Link>
+                  </li>
+                  {/* 🔑 Role-based link */}
+                  {role === "admin" && (
+                    <li>
+                      <Link
+                        to="/admin"
+                        className="hover:text-yellow-400 transition"
+                      >
+                        Admin Dashboard
+                      </Link>
+                    </li>
+                  )}
+                  <li>
+                    <button
+                      onClick={() => {
+                        logout();
+                      }}
+                      className="text-left hover:text-red-400 transition"
+                    >
+                      Logout
+                    </button>
+                  </li>
+                </>
+              )}
             </ul>
           </div>
         </div>

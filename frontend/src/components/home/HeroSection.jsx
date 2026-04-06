@@ -7,7 +7,7 @@ const MotionSpan = motion.span;
 const MotionH1 = motion.h1;
 const MotionP = motion.p;
 const MotionDiv = motion.div;
-const MotionLink = motion(Link);
+const MotionLink = motion.create(Link);
 
 export function HeroSection() {
   return (
