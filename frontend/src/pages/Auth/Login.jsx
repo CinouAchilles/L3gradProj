@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { FiCheckCircle, FiShield, FiZap } from "react-icons/fi";
 
@@ -8,6 +8,7 @@ import { MotionWrapperAuth } from "../../components/common/MotionWrapperAuth.jsx
 import PerksPanel from "../../components/common/PerksPanel.jsx";
 import PasswordInput from "../../components/common/PasswordInput.jsx";
 import { useUserStore } from "../../stores/useUserStore.jsx";
+import LoadingSpinner from "../../components/common/LoadingSpinner.jsx";
 
 const perks = [
   {
@@ -32,12 +33,12 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const { isLoading, login } = useUserStore();
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}$/;
+  const passwordTooShort = password.length > 0 && password.length < 6;
 
-  const isFormInvalid = isLoading || !email || !password;
+  const isFormInvalid = isLoading || !email || !password || passwordTooShort;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Logging in with:", { email, password });
     if (!email || !password) {
       return toast.error("Email and password are required");
     }
@@ -53,6 +54,10 @@ export default function Login() {
     if (loggedInUser.success) {
       setEmail("");
       setPassword("");
+      // setTimeout(()=>{
+      //   Navigate("/shop"); // Redirect to shop page after successful login
+      // }, 1000)
+      
     }
   };
 
@@ -111,6 +116,11 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
               />
+              {passwordTooShort && (
+                <p className="text-[11px] text-rose-400">
+                  Password should be at least 6 characters
+                </p>
+              )}
 
               <div className="flex items-center justify-between text-xs">
                 <label className="flex items-center gap-2 text-slate-300">
@@ -129,8 +139,15 @@ export default function Login() {
                 disabled={isFormInvalid}
                 className="w-full rounded-xl bg-linear-to-r from-violet-500 to-cyan-500 py-3 text-sm font-semibold text-white shadow-md transition-all hover:scale-[1.01] hover:shadow-[0_0_24px_rgba(24,230,245,0.25)] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {" "}
-                {isLoading ? "Logging in..." : "Log In"}{" "}
+                {isLoading ? (
+                  <LoadingSpinner
+                    size="sm"
+                    label="Logging in..."
+                    className="justify-center"
+                  />
+                ) : (
+                  "Log In"
+                )}
               </button>
             </MotionWrapperAuth>
 

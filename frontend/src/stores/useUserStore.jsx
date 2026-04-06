@@ -5,7 +5,7 @@ import axios from "../lib/axios.js";
 export const useUserStore = create((set) => ({
   user: null,
   isLoading: false,
-  checkAuth: true,
+  checkingAuth: true,
 
   signup: async (name, lastname, email, password, confirmPassword) => {
     set({ isLoading: true });
@@ -38,6 +38,7 @@ export const useUserStore = create((set) => ({
       const res = await axios.post("/auth/login", { email, password });
       set({ isLoading: false, user: res.data.user });
       toast.success("Logged in successfully!");
+      console.log("Logged in user:", res.data.user);
       return { success: true, user: res.data.user };
     } catch (error) {
       set({ isLoading: false });
@@ -47,4 +48,17 @@ export const useUserStore = create((set) => ({
       return { success: false };
     }
   },
+
+checkAuth: async () => {
+    set({ checkingAuth: true });
+    try {
+      const res = await axios.get("/auth/profile"); // returns the logged-in user
+      set({ user: res.data.user });
+    // eslint-disable-next-line no-unused-vars
+    } catch (error) {
+      set({ user: null });
+    } finally {
+      set({ checkingAuth: false });
+    }}
+
 }));

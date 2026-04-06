@@ -8,6 +8,7 @@ import { useUserStore } from "../../stores/useUserStore.jsx";
 import PerksPanel from "../../components/common/PerksPanel.jsx";
 import PasswordInput from "../../components/common/PasswordInput.jsx";
 import { MotionWrapperAuth } from "../../components/common/MotionWrapperAuth.jsx";
+import LoadingSpinner from "../../components/common/LoadingSpinner.jsx";
 
 export const MotionDiv = motion.div;
 export const MotionForm = motion.form;
@@ -173,7 +174,15 @@ export default function Signup() {
                 disabled={isFormInvalid}
                 className="w-full cursor-pointer rounded-xl bg-linear-to-r from-violet-500 to-cyan-500 py-3 text-sm font-semibold text-white shadow-md transition-all hover:scale-[1.01] hover:shadow-[0_0_24px_rgba(24,230,245,0.25)] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isLoading ? "Creating account..." : "Create Account"}
+                {isLoading ? (
+                  <LoadingSpinner
+                    size="sm"
+                    label="Creating account..."
+                    className="justify-center"
+                  />
+                ) : (
+                  "Create Account"
+                )}
               </button>
             </MotionWrapperAuth>
 
