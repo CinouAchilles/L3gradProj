@@ -3,39 +3,37 @@ import jwt from "jsonwebtoken";
 import { redis } from "../lib/redis.js";
 
 const generateTokens = (userId) => {
-    // Implement your token generation logic here 
-    const accessToken = jwt.sign({ userId } , process.env.ACCESS_TOKEN_SECRET, {
-        expiresIn: '15m' // Access token expires in 15 minutes
-    })
-    const refreshToken = jwt.sign({ userId} , process.env.REFRESH_TOKEN_SECRET, {
-        expiresIn: '7d' // Refresh token expires in 7 days
-    })
-    return { accessToken, refreshToken };
-}
+  // Implement your token generation logic here
+  const accessToken = jwt.sign({ userId }, process.env.ACCESS_TOKEN_SECRET, {
+    expiresIn: "15m", // Access token expires in 15 minutes
+  });
+  const refreshToken = jwt.sign({ userId }, process.env.REFRESH_TOKEN_SECRET, {
+    expiresIn: "7d", // Refresh token expires in 7 days
+  });
+  return { accessToken, refreshToken };
+};
 
 const storeRefreshToken = async (userId, refreshToken) => {
-    // Implement your logic to store the refresh token in Redis here
-    await redis.set(`refreshToken:${userId}`, refreshToken ,{
-        ex: 7 * 24 * 60 * 60, // Expire in 7 days
-    }) 
-
-}
+  // Implement your logic to store the refresh token in Redis here
+  await redis.set(`refreshToken:${userId}`, refreshToken, {
+    ex: 7 * 24 * 60 * 60, // Expire in 7 days
+  });
+};
 
 const setCookies = (res, accessToken, refreshToken) => {
-    res.cookie("accessToken", accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 15 * 60 * 1000, // 15 minutes
-    });
-    res.cookie("refreshToken", refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
-}
-
+  res.cookie("accessToken", accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 15 * 60 * 1000, // 15 minutes
+  });
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  });
+};
 
 export const signup = async (req, res) => {
   if (!req.body) {
@@ -43,10 +41,10 @@ export const signup = async (req, res) => {
       message: "Request body is missing",
     });
   }
-  const { name, email, password } = req.body;
-  if (!name || !email || !password) {
+  const { name, lastname, email, password } = req.body;
+  if (!name || !lastname || !email || !password) {
     return res.status(400).json({
-      message: "Name, email, and password are required",
+      message: "Name, last name, email, and password are required",
     });
   }
 
@@ -58,15 +56,14 @@ export const signup = async (req, res) => {
       });
     }
 
-    const user = new User({ name, email, password });
+    const user = new User({ name, lastname, email, password });
     await user.save();
 
-    //authentication logic 
-    const {accessToken, refreshToken} = generateTokens(user._id);
+    //authentication logic
+    const { accessToken, refreshToken } = generateTokens(user._id);
     await storeRefreshToken(user._id, refreshToken);
 
     setCookies(res, accessToken, refreshToken);
-
 
     // const { password: _password, ...sanitizedUser } = user.toObject();
 
@@ -74,6 +71,7 @@ export const signup = async (req, res) => {
       user: {
         userId: user._id,
         name: user.name,
+        lastname: user.lastname,
         email: user.email,
         role: user.role,
       },
@@ -90,49 +88,49 @@ export const signup = async (req, res) => {
 };
 
 export const login = async (req, res) => {
-    if(!req.body){
-        return res.status(400).json({
-            message: "Request body is missing",
-        })
+  if (!req.body) {
+    return res.status(400).json({
+      message: "Request body is missing",
+    });
+  }
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({
+      message: "Email and password are required",
+    });
+  }
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({
+        message: "Invalid email or password",
+      });
     }
-    const {email , password} = req.body;
-    if(!email || !password){
-        return res.status(400).json({
-            message: "Email and password are required",
-        })
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(400).json({
+        message: "Invalid email or password",
+      });
     }
-    try {
-        const user = await User.findOne({ email });
-        if(!user){
-            return res.status(400).json({
-                message: "Invalid email or password",
-            })
-        }
-        const isMatch = await user.comparePassword(password);
-        if(!isMatch){
-            return res.status(400).json({
-                message: "Invalid email or password",
-            })
-        }
-        const { accessToken, refreshToken } = generateTokens(user._id);
-        await storeRefreshToken(user._id, refreshToken);
-        setCookies(res, accessToken, refreshToken);
-        // const { password: _password, ...sanitizedUser } = user.toObject();
-        return res.json({
-            user: {
-                userId: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-            },
-            message: "Logged in successfully",
-        })
-    } catch (error) {
-        console.error("Error during login:", error);
-        return res.status(500).json({
-            message: "Error during login",
-        });
-    }
+    const { accessToken, refreshToken } = generateTokens(user._id);
+    await storeRefreshToken(user._id, refreshToken);
+    setCookies(res, accessToken, refreshToken);
+    // const { password: _password, ...sanitizedUser } = user.toObject();
+    return res.json({
+      user: {
+        userId: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+      message: "Logged in successfully",
+    });
+  } catch (error) {
+    console.error("Error during login:", error);
+    return res.status(500).json({
+      message: "Error during login",
+    });
+  }
 };
 
 export const logout = async (req, res) => {
@@ -142,8 +140,7 @@ export const logout = async (req, res) => {
     try {
       const decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
       await redis.del(`refreshToken:${decoded.userId}`);
-    } catch (err) {
-    }
+    } catch (err) {}
   }
 
   res.clearCookie("accessToken", { path: "/" });
@@ -155,77 +152,77 @@ export const logout = async (req, res) => {
 // token refresh logic
 
 export const refreshToken = async (req, res) => {
-    const token = req.cookies.refreshToken;
+  const token = req.cookies.refreshToken;
 
-    if (!token) {
-        return res.status(401).json({ message: "Refresh token is missing" });
+  if (!token) {
+    return res.status(401).json({ message: "Refresh token is missing" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+
+    const storedRefreshToken = await redis.get(
+      `refreshToken:${decoded.userId}`,
+    );
+
+    if (storedRefreshToken !== token) {
+      return res.status(401).json({ message: "Invalid refresh token" });
     }
 
-    try {
-        const decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+    const accessToken = jwt.sign(
+      { userId: decoded.userId },
+      process.env.ACCESS_TOKEN_SECRET,
+      { expiresIn: "15m" },
+    );
 
-        const storedRefreshToken = await redis.get(`refreshToken:${decoded.userId}`);
+    setCookies(res, accessToken, token);
 
-        if (storedRefreshToken !== token) {
-            return res.status(401).json({ message: "Invalid refresh token" });
-        }
-
-        const accessToken = jwt.sign(
-            { userId: decoded.userId },
-            process.env.ACCESS_TOKEN_SECRET,
-            { expiresIn: "15m" }
-        );
-
-        setCookies(res, accessToken, token);
-
-        return res.json({ message: "Access token refreshed successfully" });
-
-    } catch (error) {
-        return res.status(401).json({ message: "Invalid refresh token" });
-    }
+    return res.json({ message: "Access token refreshed successfully" });
+  } catch (error) {
+    return res.status(401).json({ message: "Invalid refresh token" });
+  }
 };
 // TODO: implement getProfile controller logic
 export const getProfile = async (req, res) => {
-    // const { email } = req.body;
-    // try {
-    //     const user = await User.findOne({ email });
-    //     if (!user) {
-    //         return res.status(404).json({ message: "User not found" });
-    //     }
-    //     return res.json({
-    //         user: {
-    //             userId: user._id,
-    //             name: user.name,
-    //             email: user.email,
-    //             role: user.role,
-    //         }
-    //     });
-    // } catch (error) {
-    //     console.error("Error fetching profile:", error);
-    //     return res.status(500).json({ message: "Error fetching profile" });
-    // }
-    try {
-        if (!req.user) {
-            return res.status(404).json({ message: "User not found" });
-        }
-        return res.json({
-            user: req.user
-        });
-    } catch (error) {
-        console.error("Error fetching profile:", error);
-        return res.status(500).json({ message: "Error fetching profile" });
+  // const { email } = req.body;
+  // try {
+  //     const user = await User.findOne({ email });
+  //     if (!user) {
+  //         return res.status(404).json({ message: "User not found" });
+  //     }
+  //     return res.json({
+  //         user: {
+  //             userId: user._id,
+  //             name: user.name,
+  //             email: user.email,
+  //             role: user.role,
+  //         }
+  //     });
+  // } catch (error) {
+  //     console.error("Error fetching profile:", error);
+  //     return res.status(500).json({ message: "Error fetching profile" });
+  // }
+  try {
+    if (!req.user) {
+      return res.status(404).json({ message: "User not found" });
     }
-}
+    return res.json({
+      user: req.user,
+    });
+  } catch (error) {
+    console.error("Error fetching profile:", error);
+    return res.status(500).json({ message: "Error fetching profile" });
+  }
+};
 
+export const checkAuth = async (req, res) => {
+  // console.log(req); // huge object
+  // console.log("req.headers: " + JSON.stringify(req.headers));
+  // console.log("req body: " + JSON.stringify(req.body));
+  // console.log("req cookies: " + JSON.stringify(req.cookies));
+  if (!req.cookies || !req.cookies.accessToken) {
+    return res.status(401).json({ message: "user is not authenticated" });
+  }
 
-export const checkAuth = async (req,  res)=>{
-        // console.log(req); // huge object
-    // console.log("req.headers: " + JSON.stringify(req.headers));
-    // console.log("req body: " + JSON.stringify(req.body));
-    // console.log("req cookies: " + JSON.stringify(req.cookies));
-    if(!req.cookies || !req.cookies.accessToken) {
-        return res.status(401).json({ message: "user is not authenticated" });
-    }
-
-    return res.json({ message: "You are authenticated" });
-}
+  return res.json({ message: "You are authenticated" });
+};

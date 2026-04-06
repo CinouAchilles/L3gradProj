@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { FiCheckCircle, FiShield, FiZap } from "react-icons/fi";
 import { motion } from "framer-motion";
+import { useUserStore } from "../../stores/useUserStore.jsx";
 
 import PerksPanel from "../../components/common/PerksPanel.jsx";
 import PasswordInput from "../../components/common/PasswordInput.jsx";
@@ -10,8 +11,6 @@ import { MotionWrapperAuth } from "../../components/common/MotionWrapperAuth.jsx
 
 export const MotionDiv = motion.div;
 export const MotionForm = motion.form;
-
-
 
 const perks = [
   {
@@ -32,37 +31,56 @@ const perks = [
 ];
 
 export default function Signup() {
-  const [name, setName] = useState("");
-  const [lastname, setLastname] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  const passwordTooShort = password.length > 0 && password.length < 6;
+  const [formData , setFormData] = useState({
+    name: "",
+    lastname: "",
+    email: "",
+    password: "",
+    confirmPassword: ""
+  })
+
+  const { isLoading, signup } = useUserStore();
+
+  const passwordTooShort = formData.password.length > 0 && formData.password.length < 6;
   const passwordsDoNotMatch =
-    confirmPassword.length > 0 && password !== confirmPassword;
+    formData.confirmPassword.length > 0 && formData.password !== formData.confirmPassword;
   const isFormInvalid =
-    loading || passwordTooShort || passwordsDoNotMatch || !name || !email || !password || !confirmPassword;
+    isLoading ||
+    passwordTooShort ||
+    passwordsDoNotMatch ||
+    !formData.name ||
+    !formData.lastname ||
+    !formData.email ||
+    !formData.password ||
+    !formData.confirmPassword;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Signing up with:", { name, lastname, email, password, confirmPassword });
     if (passwordTooShort)
       return toast.error("Password must be at least 6 characters");
     if (passwordsDoNotMatch) return toast.error("Passwords do not match");
 
-    setLoading(true);
-    setTimeout(() => {
-      toast.success("Account created! Welcome to HardWorx.");
-      setLoading(false);
-      setName("");
-      setLastname("");
-      setEmail("");
-      setPassword("");
-      setConfirmPassword("");
-    }, 1000);
+    const createdUser = await signup(
+      formData.name,
+      formData.lastname,
+      formData.email,
+      formData.password,
+      formData.confirmPassword
+    );
+
+    if (createdUser) {
+      setFormData({
+        name: "",
+        lastname: "",
+        email: "",
+        password: "",
+        confirmPassword: ""
+      });
+    }
   };
+
+
 
   return (
     <div className="relative min-h-[78vh] flex items-center justify-center px-2 sm:px-4">
@@ -103,15 +121,15 @@ export default function Signup() {
             >
               <div className="grid gap-4 sm:grid-cols-2">
                 <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
                   placeholder="First name"
                   required
                   className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 transition"
                 />
                 <input
-                  value={lastname}
-                  onChange={(e) => setLastname(e.target.value)}
+                  value={formData.lastname}
+                  onChange={(e) => setFormData({...formData, lastname: e.target.value})}
                   placeholder="Last name"
                   required
                   className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 transition"
@@ -119,8 +137,8 @@ export default function Signup() {
               </div>
 
               <input
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
                 placeholder="Email"
                 type="email"
                 required
@@ -128,13 +146,13 @@ export default function Signup() {
               />
 
               <PasswordInput
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={formData.password}
+                onChange={(e) => setFormData({...formData, password: e.target.value})}
                 placeholder="Password"
               />
               <PasswordInput
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                value={formData.confirmPassword}
+                onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
                 placeholder="Confirm Password"
               />
 
@@ -149,13 +167,12 @@ export default function Signup() {
                 </p>
               )}
 
-              
               <button
                 type="submit"
                 disabled={isFormInvalid}
-                className="w-full rounded-xl bg-linear-to-r from-violet-500 to-cyan-500 py-3 text-sm font-semibold text-white shadow-md transition-all hover:scale-[1.01] hover:shadow-[0_0_24px_rgba(24,230,245,0.25)] disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full cursor-pointer rounded-xl bg-linear-to-r from-violet-500 to-cyan-500 py-3 text-sm font-semibold text-white shadow-md transition-all hover:scale-[1.01] hover:shadow-[0_0_24px_rgba(24,230,245,0.25)] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {loading ? "Creating account..." : "Create Account"}
+                {isLoading ? "Creating account..." : "Create Account"}
               </button>
             </MotionWrapperAuth>
 
@@ -173,4 +190,5 @@ export default function Signup() {
       </MotionWrapperAuth>
     </div>
   );
+
 }

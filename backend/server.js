@@ -4,6 +4,7 @@ import authRouter from './routes/auth.routes.js';
 import productRouter from './routes/product.routes.js';
 import { connectDB } from './lib/db.js';
 import cookieParser from 'cookie-parser';
+import cors from 'cors';
 import cartRouter from './routes/cart.routes.js';
 import analyticsRouter from './routes/analytics.routes.js';
 import orderRouter from './routes/order.routes.js';
@@ -12,6 +13,12 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const clientOrigin = process.env.CLIENT_URL || 'http://localhost:5174';
+
+app.use(cors({
+    origin: clientOrigin,
+    credentials: true,
+}));
 app.use(express.json()) // Middleware to parse JSON bodies
 app.use(cookieParser()) // Middleware to parse cookies
 app.get('/' , (req , res)=>{
