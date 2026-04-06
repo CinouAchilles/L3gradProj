@@ -1,5 +1,10 @@
 import mongoose from "mongoose";
 
+const buildPopulatedCartResponse = async (user) => {
+  await user.populate("cartItems.product");
+  return user.cartItems;
+};
+
 export const addToCart = async (req, res) => {
   try {
     const { productId } = req.body;
@@ -12,9 +17,10 @@ export const addToCart = async (req, res) => {
     );
     if (existingItem) {
       if (existingItem.quantity >= 3) {
+        const cart = await buildPopulatedCartResponse(user);
         return res.status(400).json({
           message: "Maximum quantity for this product is 3",
-          cart: user.cartItems,
+          cart,
         });
       }
       existingItem.quantity += 1;
@@ -22,9 +28,10 @@ export const addToCart = async (req, res) => {
       user.cartItems.push({ product: productId, quantity: 1 });
     }
     await user.save();
+    const cart = await buildPopulatedCartResponse(user);
     return res.json({
       message: "Product added to cart successfully",
-      cart: user.cartItems,
+      cart,
     });
   } catch (error) {
     console.error("Error adding product to cart: " + error.message);
@@ -46,9 +53,10 @@ export const deleteWholeProductFromCart = async (req, res) => {
       (item) => item.product.toString() !== productId,
     );
     await user.save();
+    const cart = await buildPopulatedCartResponse(user);
     return res.json({
       message: "Product deleted from cart successfully",
-      cart: user.cartItems,
+      cart,
     });
   } catch (error) {
     console.error("Error deleting product from cart: " + error.message);
@@ -86,27 +94,30 @@ export const updateTheQuantityOfProductInCart = async (req, res) => {
     if (qty < 1) {
       user.cartItems.splice(itemIndex, 1);
       await user.save();
+      const cart = await buildPopulatedCartResponse(user);
       return res.json({
         message: "Product removed from cart successfully",
-        cart: user.cartItems,
+        cart,
       });
     }
 
     // Enforce max quantity
     if (qty > 3) {
+      const cart = await buildPopulatedCartResponse(user);
       return res.status(400).json({
         message: "Maximum quantity for this product is 3",
-        cart: user.cartItems,
+        cart,
       });
     }
 
     // Update quantity
     user.cartItems[itemIndex].quantity = qty;
     await user.save();
+    const cart = await buildPopulatedCartResponse(user);
 
     return res.json({
       message: "Product quantity updated successfully",
-      cart: user.cartItems,
+      cart,
     });
 
   } catch (error) {
@@ -120,8 +131,8 @@ export const updateTheQuantityOfProductInCart = async (req, res) => {
 export const getAllCartProducts = async (req, res) => {
   try {
     const user = req.user;
-    await user.populate("cartItems.product");
-    return res.json({ cart: user.cartItems, user: req.user }); // return the user too for test
+    const cart = await buildPopulatedCartResponse(user);
+    return res.json({ cart });
   } catch (error) {
     console.error("Error fetching cart products: " + error.message);
     return res.status(500).json({ message: "Error fetching cart products" });

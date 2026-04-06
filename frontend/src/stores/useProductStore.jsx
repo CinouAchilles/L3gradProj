@@ -58,7 +58,7 @@ export const useProductStore = create((set, get) => ({
   fetchRecommendedProducts: async () => {
     try {
       const res = await axios.get("/products/recommended");
-      set({ recommendedProducts: res.data.products || [] });
+      set({ recommendedProducts: res.data.recommendedProducts || [] });
     } catch (error) {
       set({ recommendedProducts: [] });
       toast.error(
@@ -88,7 +88,7 @@ export const useProductStore = create((set, get) => ({
   updateProduct: async (id, updatedData) => {
     set({ isSavingProduct: true });
     try {
-      const res = await axios.patch(`/products/${id}`, updatedData);
+      const res = await axios.patch(`/products/updateproduct/${id}`, updatedData);
       set((state) => ({
         products: state.products.map((p) =>
           p._id === id ? res.data.product || p : p,

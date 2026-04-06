@@ -4,7 +4,7 @@ import { adminOnly, protectRoute } from '../middleware/auth.middleware.js';
 
 const productRouter = express.Router();
 
-productRouter.get('/', protectRoute  , getAllProducts);
+productRouter.get('/', getAllProducts);
 productRouter.get('/featured', getFeaturedProducts);
 productRouter.get('/recommended', getRecommendedUnderProduct); // adi tkoun ta7t lproduct ki td5l 3la product details page yjib products recommended li ta7t lproduct details
 productRouter.get('/category/:category', getByCategoryProducts);

@@ -25,8 +25,8 @@ export const useCartStore = create((set, get) => ({
   addToCart: async (productId) => {
     set({ isUpdatingCart: true });
     try {
-      const res = await axios.post("/cart/add", { productId });
-      set({ cartItems: res.data.cart || [] });
+      await axios.post("/cart/add", { productId });
+      await get().fetchCart();
       toast.success("Added to cart");
       return true;
     } catch (error) {
@@ -47,8 +47,8 @@ export const useCartStore = create((set, get) => ({
         return false;
       }
 
-      const res = await axios.put(`/cart/${productId}`, { quantity: qty });
-      set({ cartItems: res.data.cart || [] });
+      await axios.put(`/cart/${productId}`, { quantity: qty });
+      await get().fetchCart();
       return true;
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to update quantity");
@@ -61,8 +61,8 @@ export const useCartStore = create((set, get) => ({
   removeFromCart: async (productId) => {
     set({ isUpdatingCart: true });
     try {
-      const res = await axios.delete("/cart/delete", { data: { productId } });
-      set({ cartItems: res.data.cart || [] });
+      await axios.delete("/cart/delete", { data: { productId } });
+      await get().fetchCart();
       toast.success("Removed from cart");
       return true;
     } catch (error) {

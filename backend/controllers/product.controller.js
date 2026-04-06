@@ -6,9 +6,7 @@ import mongoose from "mongoose";
 export const getAllProducts = async (req, res) => {
   try {
     const products = await Product.find({});
-    res.json({
-      products: products.length === 0 ? ["No products found"] : products,
-    });
+    res.json({ products });
   } catch (error) {
     console.error("Error fetching products:", error);
     res.status(500).json({ message: "Error fetching products" });
@@ -45,12 +43,12 @@ export const getFeaturedProducts = async (req, res) => {
 
     featuredProducts = await Product.find({ isFeatured: true }).lean();
     if (featuredProducts.length === 0) {
-      return res.json({ products: ["No featured products found"] });
+      return res.json({ products: [] });
     }
     //store in redis cache for faster access next time
     await redis.set("featuredProducts", JSON.stringify(featuredProducts));
 
-    res.json(featuredProducts);
+    res.json({ products: featuredProducts });
   } catch (error) {
     console.error("Error fetching featured products:", error);
     res.status(500).json({ message: "Error fetching featured products" });
@@ -129,6 +127,7 @@ export const createProduct = async (req, res) => {
     });
 
     await product.save();
+  await updateFeaturedFromCache();
 
     res.status(201).json({ message: "Product created successfully", product });
   } catch (error) {
@@ -218,10 +217,7 @@ export const updateProduct = async (req, res) => {
     }
 
     await product.save();
-
-    if (product.isFeatured) {
-      await updateFeaturedFromCache();
-    }
+    await updateFeaturedFromCache();
 
     return res.status(200).json({
       message: "Product updated successfully",
@@ -269,6 +265,7 @@ export const deleteProduct = async (req, res) => {
     }
 
     await Product.findByIdAndDelete(id);
+  await updateFeaturedFromCache();
 
     res.json({ message: "Product deleted successfully" });
   } catch (error) {

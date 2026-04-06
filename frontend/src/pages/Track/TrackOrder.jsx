@@ -1,15 +1,17 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { HiOutlineSearch, HiOutlinePrinter, HiOutlineReceiptTax } from "react-icons/hi";
 import { FiCheckCircle, FiPackage, FiTruck } from "react-icons/fi";
 import toast from "react-hot-toast";
+import { useOrderStore } from "../../stores/useOrderStore.jsx";
+import LoadingSpinner from "../../components/common/LoadingSpinner.jsx";
 
 const MotionDiv = motion.div;
 const MotionH1 = motion.h1;
 
 const statusMeta = {
-  pending_phone_confirmation: {
+  pending: {
     label: "Pending confirmation",
     color: "text-yellow-300",
     dot: "bg-yellow-300",
@@ -19,7 +21,17 @@ const statusMeta = {
     color: "text-cyan-300",
     dot: "bg-cyan-300",
   },
-  completed: {
+  processing: {
+    label: "Processing",
+    color: "text-indigo-300",
+    dot: "bg-indigo-300",
+  },
+  shipped: {
+    label: "Shipped",
+    color: "text-blue-300",
+    dot: "bg-blue-300",
+  },
+  delivered: {
     label: "Delivered",
     color: "text-emerald-300",
     dot: "bg-emerald-300",
@@ -31,52 +43,79 @@ const statusMeta = {
   },
 };
 
-const defaultTimeline = [
-  {
-    title: "Order placed",
-    description: "Your order has been received and queued for processing.",
-    icon: FiCheckCircle,
-  },
-  {
-    title: "Packed",
-    description: "Items are packed and ready for dispatch.",
-    icon: FiPackage,
-  },
-  {
-    title: "In transit",
-    description: "The package is on the way to your delivery address.",
-    icon: FiTruck,
-  },
-];
-
-const buildMockOrder = (code) => ({
-  trackingCode: code || "ABC123",
-  status: "confirmed",
-  items: [
-    { product: { name: "Gaming Mouse" }, quantity: 1, lineTotal: 12000 },
-    { product: { name: "Keyboard" }, quantity: 1, lineTotal: 25000 },
-  ],
-  subtotal: 37000,
-});
-
 export default function TrackOrder() {
+  const { trackOrder, isLoadingOrders } = useOrderStore();
   const { trackingCode } = useParams();
   const [input, setInput] = useState(trackingCode || "");
-  const [order, setOrder] = useState(
-    trackingCode ? buildMockOrder(trackingCode) : null,
-  );
+  const [order, setOrder] = useState(null);
 
-  const handleTrack = (e) => {
+  useEffect(() => {
+    const loadInitialOrder = async () => {
+      if (!trackingCode) return;
+      const foundOrder = await trackOrder(trackingCode);
+      setOrder(foundOrder);
+    };
+
+    loadInitialOrder();
+  }, [trackingCode, trackOrder]);
+
+  const handleTrack = async (e) => {
     e.preventDefault();
+    const trimmed = input.trim();
+    if (!trimmed) {
+      toast.error("Please enter a tracking code");
+      return;
+    }
 
-    setOrder(buildMockOrder(input));
+    const foundOrder = await trackOrder(trimmed);
+    setOrder(foundOrder);
   };
 
   const handlePrint = () => {
-    toast.success("Invoice ready for print.");
+    window.print();
   };
 
-  const currentStatus = statusMeta[order?.status] || statusMeta.confirmed;
+  const orderItems = useMemo(() => order?.items || [], [order]);
+
+  const timeline = useMemo(() => {
+    const steps = [
+      {
+        key: "confirmed",
+        title: "Order confirmed",
+        description: "Your order has been received and confirmed.",
+        icon: FiCheckCircle,
+      },
+      {
+        key: "processing",
+        title: "Packed",
+        description: "Items are packed and ready for dispatch.",
+        icon: FiPackage,
+      },
+      {
+        key: "shipped",
+        title: "In transit",
+        description: "The package is on the way to your address.",
+        icon: FiTruck,
+      },
+    ];
+
+    const progressByStatus = {
+      pending: 0,
+      confirmed: 1,
+      processing: 2,
+      shipped: 3,
+      delivered: 3,
+      cancelled: 0,
+    };
+
+    const progress = progressByStatus[order?.status] ?? 0;
+    return steps.map((step, idx) => ({
+      ...step,
+      completed: idx < progress,
+    }));
+  }, [order?.status]);
+
+  const currentStatus = statusMeta[order?.status] || statusMeta.pending;
 
   return (
     <div className="relative section-padding">
@@ -118,9 +157,14 @@ export default function TrackOrder() {
 
               <button
                 type="submit"
+                disabled={isLoadingOrders}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-violet-500 to-cyan-500 px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:scale-[1.01] hover:shadow-[0_0_24px_rgba(24,230,245,0.25)] sm:w-auto"
               >
-                Track
+                {isLoadingOrders ? (
+                  <LoadingSpinner size="xs" label="Tracking..." className="justify-center" />
+                ) : (
+                  "Track"
+                )}
               </button>
             </form>
 
@@ -167,7 +211,7 @@ export default function TrackOrder() {
                       Tracking Code
                     </p>
                     <p className="mt-2 text-lg font-semibold text-slate-100">
-                      {order.trackingCode}
+                        {order.trackingNumber}
                     </p>
                   </div>
 
@@ -181,32 +225,38 @@ export default function TrackOrder() {
 
                 <div className="space-y-3">
                   <h3 className="text-sm font-semibold text-slate-100">Items</h3>
-                  {order.items.map((item) => (
+                  {orderItems.map((item) => (
                     <div
-                      key={item.product.name}
+                      key={`${item.product?._id || item.name}-${item.quantity}`}
                       className="flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3"
                     >
                       <div>
                         <p className="text-sm font-medium text-slate-100">
-                          {item.product.name}
+                          {item.name || item.product?.name || "Product"}
                         </p>
                         <p className="text-xs text-slate-400">Qty {item.quantity}</p>
                       </div>
 
                       <p className="text-sm font-semibold text-cyan-300">
-                        {item.lineTotal.toLocaleString()} DA
+                        {Number(item.lineTotal || Number(item.price || 0) * Number(item.quantity || 0)).toLocaleString()} DA
                       </p>
                     </div>
                   ))}
                 </div>
 
                 <div className="grid gap-3 rounded-xl border border-white/10 bg-white/5 p-4 sm:grid-cols-3">
-                  {defaultTimeline.map((step, index) => {
+                  {timeline.map((step, index) => {
                     const Icon = step.icon;
 
                     return (
                       <div key={step.title} className="flex gap-3 sm:block">
-                        <div className="mt-0.5 rounded-lg border border-cyan-400/20 bg-cyan-400/10 p-2 text-cyan-300 sm:mb-3 sm:mt-0">
+                        <div
+                          className={`mt-0.5 rounded-lg border p-2 sm:mb-3 sm:mt-0 ${
+                            step.completed
+                              ? "border-cyan-400/20 bg-cyan-400/10 text-cyan-300"
+                              : "border-white/10 bg-white/5 text-slate-400"
+                          }`}
+                        >
                           <Icon className="h-4 w-4" />
                         </div>
                         <div>
@@ -228,7 +278,7 @@ export default function TrackOrder() {
                       Total
                     </p>
                     <p className="mt-2 text-2xl font-black text-gradient">
-                      {order.subtotal.toLocaleString()} DA
+                      {Number(order.subtotal || 0).toLocaleString()} DA
                     </p>
                   </div>
 

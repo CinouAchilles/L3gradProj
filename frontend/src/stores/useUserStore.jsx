@@ -6,6 +6,7 @@ export const useUserStore = create((set, get) => ({
   user: null,
   isLoading: false,
   checkingAuth: true,
+  isRefreshingToken: false,
 
   signup: async (name, lastname, email, password, confirmPassword) => {
     set({ isLoading: true });
@@ -61,6 +62,7 @@ export const useUserStore = create((set, get) => ({
       toast.error(
         error.response?.data?.message || "Logout failed. Please try again.",
       );
+      return false;
     }
   },
 
@@ -77,17 +79,16 @@ export const useUserStore = create((set, get) => ({
     }
   },
   refreshToken: async () => {
-    if (get().checkingAuth) return; // Prevent multiple refresh attempts during initial auth check
-    set({ checkingAuth: true });
+    if (get().isRefreshingToken) return false;
+    set({ isRefreshingToken: true });
     try {
-      const res = await axios.post("/auth/refresh-token");
-      set({ checkingAuth: false, user: res.data.user });
-      return res.data.user;
+      await axios.post("/auth/refresh-token");
+      set({ isRefreshingToken: false });
+      return true;
       // eslint-disable-next-line no-unused-vars
     } catch (error) {
-      set({ checkingAuth: false, user: null });
-      toast.error("Session expired. Please log in again.");
-      get().logout(); // If refresh fails, log out the user
+      set({ isRefreshingToken: false, user: null });
+      return false;
     }
   },
 }));
@@ -98,21 +99,36 @@ axios.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    const requestUrl = originalRequest?.url || "";
+    const isAuthRoute =
+      requestUrl.includes("/auth/login") ||
+      requestUrl.includes("/auth/signup") ||
+      requestUrl.includes("/auth/logout") ||
+      requestUrl.includes("/auth/refresh-token");
+
+    if (isAuthRoute) {
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
         if (refreshPromise) {
-          await refreshPromise;
+          const refreshed = await refreshPromise;
+          if (!refreshed) return Promise.reject(error);
           return axios(originalRequest);
         }
         refreshPromise = useUserStore.getState().refreshToken();
-        await refreshPromise;
+        const refreshed = await refreshPromise;
         refreshPromise = null;
+        if (!refreshed) return Promise.reject(error);
         return axios(originalRequest);
       } catch (refreshError) {
-        useUserStore.getState().logout();
+        refreshPromise = null;
         return Promise.reject(refreshError);
       }
     }
+
+    return Promise.reject(error);
   },
 );

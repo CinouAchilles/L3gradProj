@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   HiOutlineChartBar,
   HiOutlineCurrencyDollar,
@@ -31,6 +31,9 @@ import {
   SectionHeader,
   StatusPill,
 } from "../../components/admin/AdminDashboardUi";
+import axios from "../../lib/axios.js";
+import { useProductStore } from "../../stores/useProductStore.jsx";
+import LoadingSpinner from "../../components/common/LoadingSpinner.jsx";
 
 const MotionH1 = motion.h1;
 const MotionDiv = motion.div;
@@ -64,94 +67,68 @@ const emptyProductForm = {
 
 export default function AdminDashboard() {
   const [tab, setTab] = useState("analytics");
+  const [orders, setOrders] = useState([]);
+  const [analyticsCounts, setAnalyticsCounts] = useState({ users: 0, products: 0 });
+  const [isLoadingDashboard, setIsLoadingDashboard] = useState(true);
+  const [isSyncingOrders, setIsSyncingOrders] = useState(false);
   const [isProductFormOpen, setIsProductFormOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState(null);
   const [productForm, setProductForm] = useState(emptyProductForm);
 
-  const analytics = {
-    totalRevenue: 1250000,
-    totalOrders: 320,
-    totalUsers: 120,
-    topSellingProducts: [
-      { name: "iPhone 13", totalSold: 50 },
-      { name: "Samsung S22", totalSold: 40 },
-      { name: "AirPods", totalSold: 35 },
-      { name: "PS5", totalSold: 25 },
-    ],
-  };
+  const {
+    products,
+    fetchProducts,
+    createProduct,
+    updateProduct,
+    deleteProduct: deleteProductFromStore,
+    toggleFeatured: toggleFeaturedInStore,
+    isLoadingProducts,
+    isSavingProduct,
+  } = useProductStore();
 
-  const [orders, setOrders] = useState([
-    {
-      _id: "1",
-      trackingCode: "ORD-001",
-      customer: { firstName: "Ali", lastName: "Ben" },
-      subtotal: 25000,
-      status: "pending",
-    },
-    {
-      _id: "2",
-      trackingCode: "ORD-002",
-      customer: { firstName: "Sara", lastName: "K." },
-      subtotal: 48000,
-      status: "confirmed",
-    },
-    {
-      _id: "3",
-      trackingCode: "ORD-003",
-      customer: { firstName: "Lina", lastName: "M." },
-      subtotal: 31500,
-      status: "processing",
-    },
-    {
-      _id: "4",
-      trackingCode: "ORD-004",
-      customer: { firstName: "Yacine", lastName: "R." },
-      subtotal: 57000,
-      status: "shipped",
-    },
-    {
-      _id: "5",
-      trackingCode: "ORD-005",
-      customer: { firstName: "Nour", lastName: "H." },
-      subtotal: 69000,
-      status: "delivered",
-    },
-  ]);
+  useEffect(() => {
+    const loadDashboardData = async () => {
+      setIsLoadingDashboard(true);
+      try {
+        const [analyticsRes, ordersRes] = await Promise.all([
+          axios.get("/analytics"),
+          axios.get("/orders"),
+          fetchProducts(),
+        ]);
 
-  const [products, setProducts] = useState([
-    {
-      _id: "1",
-      name: "iPhone 13",
-      category: "Phones",
-      description: "6.1-inch OLED, A15 chip, dual camera",
-      imageUrl: "https://via.placeholder.com/250x250.png?text=iPhone+13",
-      price: 180000,
-      isFeatured: true,
-    },
-    {
-      _id: "2",
-      name: "AirPods Pro",
-      category: "Accessories",
-      description: "ANC earbuds with wireless charging case",
-      imageUrl: "https://via.placeholder.com/250x250.png?text=AirPods+Pro",
-      price: 35000,
-      isFeatured: false,
-    },
-  ]);
+        setAnalyticsCounts({
+          users: Number(analyticsRes.data?.users || 0),
+          products: Number(analyticsRes.data?.products || 0),
+        });
+        setOrders(Array.isArray(ordersRes.data?.orders) ? ordersRes.data.orders : []);
+      } finally {
+        setIsLoadingDashboard(false);
+      }
+    };
 
-  const updateOrderStatus = (id, status) => {
+    loadDashboardData();
+  }, [fetchProducts]);
+
+  const updateOrderStatus = async (id, status) => {
+    const previous = orders;
+    setIsSyncingOrders(true);
     setOrders((prev) => prev.map((o) => (o._id === id ? { ...o, status } : o)));
+    try {
+      await axios.patch(`/orders/${id}/status`, { status });
+    } catch {
+      setOrders(previous);
+    } finally {
+      setIsSyncingOrders(false);
+    }
   };
 
-  const toggleFeatured = (id) => {
-    setProducts((prev) =>
-      prev.map((p) => (p._id === id ? { ...p, isFeatured: !p.isFeatured } : p))
-    );
+  const toggleFeatured = async (id) => {
+    await toggleFeaturedInStore(id);
   };
 
-  const deleteProduct = (id) => {
-    setProducts((prev) => prev.filter((p) => p._id !== id));
-    if (editingProductId === id) {
+  const deleteProduct = async (id) => {
+    const deleted = await deleteProductFromStore(id);
+    if (deleted && editingProductId === id) {
       closeProductForm();
     }
   };
@@ -168,7 +145,7 @@ export default function AdminDashboard() {
       name: product.name,
       category: product.category,
       description: product.description,
-      imageUrl: product.imageUrl,
+      imageUrl: product.imageUrl || product.imageFile || "",
       price: String(product.price),
       isFeatured: product.isFeatured,
     });
@@ -189,7 +166,7 @@ export default function AdminDashboard() {
     }));
   };
 
-  const saveProduct = () => {
+  const saveProduct = async () => {
     const cleanedName = productForm.name.trim();
     const cleanedCategory = productForm.category.trim();
     const cleanedDescription = productForm.description.trim();
@@ -204,49 +181,86 @@ export default function AdminDashboard() {
       return;
     }
 
+    const payload = {
+      name: cleanedName,
+      category: cleanedCategory,
+      description: cleanedDescription,
+      imageUrl: cleanedImage,
+      price: numericPrice,
+      isFeatured: productForm.isFeatured,
+    };
+
+    let result;
     if (editingProductId) {
-      setProducts((prev) =>
-        prev.map((p) =>
-          p._id === editingProductId
-            ? {
-                ...p,
-                name: cleanedName,
-                category: cleanedCategory,
-                description: cleanedDescription,
-                imageUrl: cleanedImage,
-                price: numericPrice,
-                isFeatured: productForm.isFeatured,
-              }
-            : p
-        )
-      );
+      result = await updateProduct(editingProductId, payload);
     } else {
-      setProducts((prev) => [
-        {
-          _id: `prod-${Date.now().toString(36)}`,
-          name: cleanedName,
-          category: cleanedCategory,
-          description: cleanedDescription,
-          imageUrl: cleanedImage,
-          price: numericPrice,
-          isFeatured: productForm.isFeatured,
-        },
-        ...prev,
-      ]);
+      result = await createProduct(payload);
     }
 
-    closeProductForm();
+    if (result?.success) {
+      closeProductForm();
+    }
   };
+
+  const totalRevenue = useMemo(
+    () => orders.reduce((sum, order) => sum + Number(order.subtotal || 0), 0),
+    [orders]
+  );
+
+  const topSellingProducts = useMemo(() => {
+    const soldMap = new Map();
+    for (const order of orders) {
+      for (const item of order.items || []) {
+        const key = item.name || "Unknown";
+        soldMap.set(key, (soldMap.get(key) || 0) + Number(item.quantity || 0));
+      }
+    }
+    return Array.from(soldMap.entries())
+      .map(([name, totalSold]) => ({ name, totalSold }))
+      .sort((a, b) => b.totalSold - a.totalSold)
+      .slice(0, 6);
+  }, [orders]);
+
+  const monthlyRevenue = useMemo(() => {
+    const now = new Date();
+    const months = [];
+
+    for (let i = 5; i >= 0; i -= 1) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({
+        key: `${d.getFullYear()}-${d.getMonth()}`,
+        month: d.toLocaleString("en-US", { month: "short" }),
+        revenue: 0,
+        orders: 0,
+      });
+    }
+
+    const monthIndex = new Map(months.map((m, idx) => [m.key, idx]));
+
+    for (const order of orders) {
+      const createdAt = order.createdAt ? new Date(order.createdAt) : null;
+      if (!createdAt || Number.isNaN(createdAt.getTime())) continue;
+
+      const key = `${createdAt.getFullYear()}-${createdAt.getMonth()}`;
+      const idx = monthIndex.get(key);
+      if (idx === undefined) continue;
+
+      months[idx].revenue += Number(order.subtotal || 0);
+      months[idx].orders += 1;
+    }
+
+    return months;
+  }, [orders]);
 
   const stats = [
     {
       label: "Revenue",
-      value: `${analytics.totalRevenue.toLocaleString()} DA`,
+      value: `${totalRevenue.toLocaleString()} DA`,
       icon: HiOutlineCurrencyDollar,
     },
     {
       label: "Orders",
-      value: analytics.totalOrders,
+      value: orders.length,
       icon: HiOutlineShoppingBag,
     },
     {
@@ -256,7 +270,7 @@ export default function AdminDashboard() {
     },
     {
       label: "Users",
-      value: analytics.totalUsers,
+      value: analyticsCounts.users,
       icon: HiOutlineUsers,
     },
   ];
@@ -265,15 +279,6 @@ export default function AdminDashboard() {
     { key: "analytics", label: "Analytics" },
     { key: "orders", label: "Orders" },
     { key: "products", label: "Products" },
-  ];
-
-  const monthlyRevenue = [
-    { month: "Jan", revenue: 138000, orders: 41 },
-    { month: "Feb", revenue: 152000, orders: 44 },
-    { month: "Mar", revenue: 168000, orders: 49 },
-    { month: "Apr", revenue: 177000, orders: 53 },
-    { month: "May", revenue: 194000, orders: 57 },
-    { month: "Jun", revenue: 221000, orders: 63 },
   ];
 
   const statusCounts = statusOptions.reduce((acc, status) => {
@@ -293,11 +298,11 @@ export default function AdminDashboard() {
     : 0;
 
   const avgOrderValue = Math.round(
-    analytics.totalRevenue / Math.max(analytics.totalOrders, 1)
+    totalRevenue / Math.max(orders.length, 1)
   );
   const userToOrderRatio =
-    analytics.totalUsers > 0
-      ? (analytics.totalOrders / analytics.totalUsers).toFixed(1)
+    analyticsCounts.users > 0
+      ? (orders.length / analyticsCounts.users).toFixed(1)
       : "0.0";
 
   const analyticsHighlights = [
@@ -350,6 +355,19 @@ export default function AdminDashboard() {
       Number(productForm.price) >= 0
     );
   }, [productForm]);
+
+  if (isLoadingDashboard) {
+    return (
+      <div className="flex min-h-[55vh] items-center justify-center">
+        <LoadingSpinner
+          size="md"
+          label="Loading admin dashboard..."
+          className="text-sm text-slate-200"
+          colorClass="border-cyan-300/30 border-t-cyan-300"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="container-main section-padding relative">
@@ -428,7 +446,7 @@ export default function AdminDashboard() {
               />
 
               <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={240}>
                   <LineChart data={monthlyRevenue}>
                     <CartesianGrid stroke="rgba(255,255,255,0.08)" strokeDasharray="3 3" />
                     <XAxis dataKey="month" stroke="#94a3b8" tick={{ fill: "#94a3b8", fontSize: 12 }} />
@@ -451,7 +469,7 @@ export default function AdminDashboard() {
               <SectionHeader icon={HiOutlineSparkles} title="Order Status" />
 
               <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={240}>
                   <PieChart>
                     <Pie
                       data={statusBreakdown}
@@ -476,8 +494,8 @@ export default function AdminDashboard() {
             <SectionHeader icon={HiOutlineSparkles} title="Top Selling Products" />
 
             <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={analytics.topSellingProducts}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={240}>
+                <BarChart data={topSellingProducts}>
                   <CartesianGrid stroke="rgba(255,255,255,0.08)" strokeDasharray="3 3" />
                   <XAxis dataKey="name" stroke="#94a3b8" tick={{ fill: "#94a3b8", fontSize: 12 }} />
                   <YAxis stroke="#94a3b8" tick={{ fill: "#94a3b8", fontSize: 12 }} />
@@ -505,7 +523,7 @@ export default function AdminDashboard() {
             <tbody>
               {orders.map((o) => (
                 <tr key={o._id} className="border-t border-white/8">
-                  <td className="px-4 py-3 font-medium text-cyan-300">{o.trackingCode}</td>
+                  <td className="px-4 py-3 font-medium text-cyan-300">{o.trackingNumber}</td>
                   <td className="px-4 py-3">
                     {o.customer.firstName} {o.customer.lastName}
                   </td>
@@ -520,6 +538,7 @@ export default function AdminDashboard() {
                     <select
                       value={o.status}
                       onChange={(e) => updateOrderStatus(o._id, e.target.value)}
+                      disabled={isSyncingOrders}
                       className="rounded-lg border border-white/15 bg-white/5 px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400/30"
                     >
                       {statusOptions.map((s) => (
@@ -642,10 +661,14 @@ export default function AdminDashboard() {
               <div className="mt-5 flex flex-wrap gap-3">
                 <button
                   onClick={saveProduct}
-                  disabled={!isProductFormValid}
+                  disabled={!isProductFormValid || isSavingProduct}
                   className="inline-flex items-center gap-2 rounded-xl bg-linear-to-r from-violet-500 to-cyan-500 px-5 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {editingProductId ? "Save Changes" : "Create Product"}
+                  {isSavingProduct
+                    ? "Saving..."
+                    : editingProductId
+                      ? "Save Changes"
+                      : "Create Product"}
                 </button>
                 <button
                   onClick={closeProductForm}

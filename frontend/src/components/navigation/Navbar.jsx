@@ -1,21 +1,29 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { FiShoppingCart, FiUser } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useUserStore } from "../../stores/useUserStore";
+import { useCartStore } from "../../stores/useCartStore";
 
 const MotionDiv = motion.div;
 
 const navItems = [
   { label: "Home", to: "/" },
   { label: "Shop", to: "/shop" },
-  { label: "Track Order", to: "/track/demo" },
+  { label: "Track Order", to: "/track" },
 ];
 
 export function Navbar() {
   const [search, setSearch] = useState("");
   const { user , logout } = useUserStore();
+  const { fetchCart, getTotalItems } = useCartStore();
   const role = user?.role;
+  const cartCount = getTotalItems();
+
+  useEffect(() => {
+    if (!user) return;
+    fetchCart();
+  }, [user, fetchCart]);
 
   const suggestions = [
     "CPU",
@@ -104,7 +112,7 @@ export function Navbar() {
 
               {/* Animated Badge */}
               <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-cyan-400 px-1 text-[10px] font-bold text-black">
-                50
+                {cartCount}
               </span>
 
               {/* Pulse effect */}

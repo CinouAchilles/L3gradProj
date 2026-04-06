@@ -1,57 +1,23 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { useEffect } from "react";
 import { HiArrowRight, HiOutlineShoppingCart } from "react-icons/hi2";
-import { MdStar } from "react-icons/md";
+import { useProductStore } from "../../stores/useProductStore";
+import { useCartStore } from "../../stores/useCartStore";
 
 const MotionDiv = motion.div;
 
 export default function FeaturedProducts() {
-  // 🔥 Mock featured products with enhanced data
-  const products = [
-    {
-      _id: "1",
-      name: "iPhone 13",
-      price: 180000,
-      imageUrl: "https://via.placeholder.com/300x300.png?text=iPhone+13",
-      category: "Phones",
-      description: "Latest iPhone with A15 Bionic chip, ProMotion display, and advanced camera system",
-      rating: 4.8,
-      reviews: 324,
-    },
-    {
-      _id: "2",
-      name: "AirPods Pro",
-      price: 35000,
-      imageUrl: "https://via.placeholder.com/300x300.png?text=AirPods+Pro",
-      category: "Accessories",
-      description: "Premium wireless earbuds with active noise cancellation and spatial audio",
-      rating: 4.6,
-      reviews: 218,
-    },
-    {
-      _id: "3",
-      name: "Samsung S22",
-      price: 150000,
-      imageUrl: "https://via.placeholder.com/300x300.png?text=Samsung+S22",
-      category: "Phones",
-      description: "Flagship smartphone with Snapdragon processor and stunning AMOLED display",
-      rating: 4.7,
-      reviews: 456,
-    },
-    {
-      _id: "4",
-      name: "PlayStation 5",
-      price: 300000,
-      imageUrl: "https://via.placeholder.com/300x300.png?text=PS5",
-      category: "Consoles",
-      description: "Next-gen gaming console with ultra-high speed SSD and ray tracing support",
-      rating: 4.9,
-      reviews: 892,
-    },
-  ];
+  const { featuredProducts, fetchFeaturedProducts, isLoadingFeatured } =
+    useProductStore();
+  const { addToCart, isUpdatingCart } = useCartStore();
 
-  // simulate loading if you want (set to true to preview skeleton)
-  const isLoading = false;
+  useEffect(() => {
+    fetchFeaturedProducts();
+  }, [fetchFeaturedProducts]);
+
+  const products = featuredProducts;
+  const isLoading = isLoadingFeatured;
 
   return (
     <section className="section-padding relative">
@@ -121,9 +87,9 @@ export default function FeaturedProducts() {
 
                   {/* Image */}
                   <div className="aspect-square bg-slate-800 overflow-hidden relative">
-                    {p.imageUrl ? (
+                    {p.imageFile || p.imageUrl ? (
                       <img
-                        src={p.imageUrl}
+                        src={p.imageFile || p.imageUrl}
                         alt={p.name}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         loading="lazy"
@@ -147,31 +113,19 @@ export default function FeaturedProducts() {
                       {p.description}
                     </p>
 
-                    {/* Rating */}
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="flex items-center">
-                        {[...Array(5)].map((_, j) => (
-                          <MdStar
-                            key={j}
-                            className={`w-3.5 h-3.5 ${
-                              j < Math.floor(p.rating)
-                                ? "text-yellow-400"
-                                : "text-slate-600"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <span className="text-xs text-slate-400">
-                        ({p.reviews})
-                      </span>
-                    </div>
-
                     {/* Price & CTA */}
                     <div className="flex items-center justify-between">
                       <p className="font-display text-lg font-bold bg-linear-to-r from-cyan-300 to-violet-300 bg-clip-text text-transparent">
                         {p.price.toLocaleString()} DA
                       </p>
-                      <button className="p-2 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-400 transition-colors">
+                      <button
+                        onClick={(event) => {
+                          event.preventDefault();
+                          addToCart(p._id);
+                        }}
+                        disabled={isUpdatingCart}
+                        className="p-2 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-400 transition-colors disabled:opacity-50"
+                      >
                         <HiOutlineShoppingCart className="w-5 h-5" />
                       </button>
                     </div>

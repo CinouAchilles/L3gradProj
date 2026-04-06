@@ -14,6 +14,7 @@ import Cart from "./pages/cart/Cart.jsx";
 import Checkout from "./pages/cart/Checkout.jsx";
 import ProductDetails from "./pages/product/ProductDetails.jsx";
 import LoadingSpinner from "./components/common/LoadingSpinner.jsx";
+import Profile from "./pages/profile/Profile.jsx";
 
 import { useUserStore } from "./stores/useUserStore.jsx";
 
@@ -47,6 +48,7 @@ function App() {
         <Route path="/" element={<HeroSection />} />
         <Route path="/shop" element={<Shop />} />
         <Route path="/product/:id" element={<ProductDetails />} />
+        <Route path="/track" element={<TrackOrder />} />
         <Route path="/track/:trackingCode" element={<TrackOrder />} />
 
         {/* 🔓 Auth  */}
@@ -62,7 +64,7 @@ function App() {
         {/* 🔐 Protected routes */}
         <Route
           path="/profile"
-          element={user ? <h1>Profile</h1> : <Navigate to="/login" replace />}
+          element={user ? <Profile /> : <Navigate to="/login" replace />}
         />
 
         <Route
