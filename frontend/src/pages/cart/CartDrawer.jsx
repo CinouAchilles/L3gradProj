@@ -1,4 +1,16 @@
+import { useEffect } from "react";
+import { Link } from "react-router-dom";
+import { useCartStore } from "../../stores/useCartStore";
+
 export function CartDrawer() {
+  const { cartItems, fetchCart, getSubtotal } = useCartStore();
+
+  useEffect(() => {
+    fetchCart();
+  }, [fetchCart]);
+
+  const subtotal = getSubtotal();
+
   return (
     <div className="drawer-side z-50">
       <label
@@ -9,75 +21,29 @@ export function CartDrawer() {
       <aside className="min-h-full w-full max-w-md bg-base-200/95 p-4 backdrop-blur-xl">
         <h2 className="mb-4 text-2xl font-bold text-white">Cart Summary</h2>
 
-        <div className="glass-card rounded-2xl p-5 text-white/80">
-          Login to manage your cart and continue checkout.
+        <div className="space-y-3">
+          {cartItems.length === 0 ? (
+            <div className="glass-card rounded-2xl p-5 text-white/80">Your cart is empty.</div>
+          ) : (
+            cartItems.slice(0, 4).map((item) => (
+              <div key={item.product?._id || item._id} className="glass-card rounded-2xl p-4 text-white/90">
+                <p className="font-semibold">{item.product?.name}</p>
+                <p className="text-sm text-white/70">Qty {item.quantity}</p>
+              </div>
+            ))
+          )}
         </div>
 
-        {/* {isAuthenticated && isLoading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map((item) => (
-              <div key={item} className="skeleton h-20 w-full rounded-xl" />
-            ))}
+        <div className="mt-4 rounded-xl border border-white/10 p-4 text-white">
+          <div className="flex items-center justify-between text-sm text-white/70">
+            <span>Subtotal</span>
+            <span>{subtotal.toLocaleString()} DA</span>
           </div>
-        ) : null} */}
+          <Link to="/cart" className="mt-3 inline-flex w-full justify-center rounded-xl bg-linear-to-r from-violet-500 to-cyan-500 py-2.5 font-semibold text-white">
+            Go to Cart
+          </Link>
+        </div>
       </aside>
     </div>
   );
 }
-
-
-// export function CartDrawer() {
-//   return (
-//     <div className="drawer-side z-50">
-//       <label
-//         htmlFor="cart-drawer"
-//         aria-label="close sidebar"
-//         className="drawer-overlay"
-//       />
-
-//       <aside className="flex min-h-full w-full max-w-md flex-col bg-base-200/95 p-4 backdrop-blur-xl text-white">
-        
-//         {/* Header */}
-//         <div className="mb-4 flex items-center justify-between">
-//           <h2 className="text-2xl font-bold">Cart Summary</h2>
-
-//           {/* Close button */}
-//           <label
-//             htmlFor="cart-drawer"
-//             className="cursor-pointer rounded-lg border border-white/20 px-3 py-1 text-sm hover:bg-white/10 transition"
-//           >
-//             Close
-//           </label>
-//         </div>
-
-//         {/* Content (scrollable) */}
-//         <div className="flex-1 space-y-4 overflow-y-auto pr-1">
-//           <div className="glass-card rounded-2xl p-5 text-white/80">
-//             Login to manage your cart and continue checkout.
-//           </div>
-
-//           {/* Skeleton (kept your logic) */}
-//           {/* {isAuthenticated && isLoading ? (
-//             <div className="space-y-3">
-//               {[1, 2, 3].map((item) => (
-//                 <div key={item} className="skeleton h-20 w-full rounded-xl" />
-//               ))}
-//             </div>
-//           ) : null} */}
-//         </div>
-
-//         {/* Footer / Actions */}
-//         <div className="mt-4 border-t border-white/10 pt-4 space-y-3">
-//           <div className="flex justify-between text-sm text-white/70">
-//             <span>Subtotal</span>
-//             <span>$0.00</span>
-//           </div>
-
-//           <button className="w-full rounded-xl bg-linear-to-r from-violet-500 to-cyan-500 py-3 font-semibold shadow-md transition hover:opacity-90">
-//             Checkout
-//           </button>
-//         </div>
-//       </aside>
-//     </div>
-//   );
-// }

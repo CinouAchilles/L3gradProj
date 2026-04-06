@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { HiArrowRight, HiOutlineShoppingCart } from "react-icons/hi";
 import { FiPackage, FiShield, FiTruck, FiStar } from "react-icons/fi";
 import { useProductStore } from "../../stores/useProductStore";
-import { useCartStore } from "./useCartStore";
+import { useCartStore } from "../../stores/useCartStore";
 
 const MotionDiv = motion.div;
 
