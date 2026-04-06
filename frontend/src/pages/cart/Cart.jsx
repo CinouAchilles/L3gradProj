@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
+import { useCartStore } from "../../stores/useCartStore.jsx";
+import LoadingSpinner from "../../components/common/LoadingSpinner.jsx";
+
 import {
   HiArrowRight,
   HiMinus,
@@ -18,52 +19,42 @@ import {
   FiClock,
   FiPackage,
 } from "react-icons/fi";
+import downloadInvoicePdf from "../../lib/downloadInvoicePdf";
 
 const MotionDiv = motion.div;
 
 const freeShippingThreshold = 250000;
 
 export default function Cart() {
-  const [cartItems, setCartItems] = useState([
-    {
-      _id: "1",
-      quantity: 1,
-      product: {
-        _id: "p1",
-        name: "iPhone 13",
-        price: 180000,
-        imageUrl: "https://via.placeholder.com/150?text=iPhone",
-        category: "Phones",
-      },
-    },
-    {
-      _id: "2",
-      quantity: 2,
-      product: {
-        _id: "p2",
-        name: "AirPods Pro",
-        price: 35000,
-        imageUrl: "https://via.placeholder.com/150?text=AirPods",
-        category: "Accessories",
-      },
-    },
-  ]);
+  const {
+    cartItems,
+    isLoadingCart,
+    isUpdatingCart,
+    fetchCart,
+    updateQuantity,
+    removeFromCart,
+  } = useCartStore();
 
-  const updateQty = (id, qty) => {
-    setCartItems((prev) =>
-      prev.map((item) =>
-        item._id === id
-          ? { ...item, quantity: Math.max(1, Math.min(3, qty)) }
-          : item
-      )
-    );
+  useEffect(() => {
+    fetchCart();
+  }, [fetchCart]);
+
+  const validCartItems = useMemo(
+    () => cartItems.filter((item) => item.product && typeof item.product === "object"),
+    [cartItems]
+  );
+
+  const updateQty = (productId, qty) => {
+    if (qty < 1) {
+      removeFromCart(productId);
+      return;
+    }
+
+    const boundedQty = Math.max(1, Math.min(3, qty));
+    updateQuantity(productId, boundedQty);
   };
 
-  const removeItem = (id) => {
-    setCartItems((prev) => prev.filter((item) => item._id !== id));
-  };
-
-  const subtotal = cartItems.reduce(
+  const subtotal = validCartItems.reduce(
     (sum, item) => sum + item.product.price * item.quantity,
     0
   );
@@ -72,92 +63,9 @@ export default function Cart() {
   const total = subtotal + shipping;
   const progress = Math.min((subtotal / freeShippingThreshold) * 100, 100);
   const remainingToFreeShipping = Math.max(freeShippingThreshold - subtotal, 0);
-  const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const totalItems = validCartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-  const downloadInvoicePdf = () => {
-    const doc = new jsPDF();
-    const createdAt = new Date();
-    const receiptNumber = `RCPT-${createdAt.getTime().toString().slice(-6)}`;
-
-    doc.setFillColor(8, 15, 35);
-    doc.rect(0, 0, 210, 297, "F");
-
-    doc.setTextColor(34, 211, 238);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(22);
-    doc.text("HardWorx Invoice", 14, 20);
-
-    doc.setTextColor(148, 163, 184);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.text("Premium gaming and hardware store", 14, 27);
-    doc.text("Store address: 12 Cyber Avenue, Algiers, Algeria", 14, 33);
-    doc.text("Support: support@hardworx.store | +213 555 010 404", 14, 39);
-
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(11);
-    doc.text(`Receipt No: ${receiptNumber}`, 140, 20);
-    doc.text(`Date: ${createdAt.toLocaleDateString()}`, 140, 26);
-    doc.text(`Time: ${createdAt.toLocaleTimeString()}`, 140, 32);
-    doc.text("Payment Method: Cash on Delivery", 140, 38);
-
-    doc.setDrawColor(34, 211, 238);
-    doc.line(14, 46, 196, 46);
-
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(14);
-    doc.text("Customer / Order Summary", 14, 56);
-
-    autoTable(doc, {
-      startY: 62,
-      head: [["Product", "Category", "Qty", "Unit Price", "Line Total"]],
-      body: cartItems.map((item) => [
-        item.product.name,
-        item.product.category || "Hardware",
-        String(item.quantity),
-        `${item.product.price.toLocaleString()} DA`,
-        `${(item.product.price * item.quantity).toLocaleString()} DA`,
-      ]),
-      theme: "grid",
-      styles: {
-        fillColor: [15, 23, 42],
-        textColor: [226, 232, 240],
-        lineColor: [51, 65, 85],
-        lineWidth: 0.2,
-      },
-      headStyles: {
-        fillColor: [14, 165, 233],
-        textColor: [255, 255, 255],
-        fontStyle: "bold",
-      },
-      alternateRowStyles: {
-        fillColor: [30, 41, 59],
-      },
-      columnStyles: {
-        2: { halign: "center" },
-        3: { halign: "right" },
-        4: { halign: "right" },
-      },
-    });
-
-    const summaryY = doc.lastAutoTable.finalY + 12;
-
-    doc.setFontSize(12);
-    doc.setTextColor(255, 255, 255);
-    doc.text(`Subtotal: ${subtotal.toLocaleString()} DA`, 14, summaryY);
-    doc.text(`Shipping: ${shipping === 0 ? "Free" : `${shipping.toLocaleString()} DA`}`, 14, summaryY + 8);
-    doc.setFont("helvetica", "bold");
-    doc.text(`Total: ${total.toLocaleString()} DA`, 14, summaryY + 18);
-
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(148, 163, 184);
-    doc.text("Delivery details to be confirmed at checkout.", 14, summaryY + 30);
-    doc.text("Order status: Pending payment confirmation", 14, summaryY + 36);
-
-    doc.save(`hardworx-invoice-${receiptNumber}.pdf`);
-  };
-
-  const isLoading = false;
+  const isLoading = isLoadingCart;
 
   return (
     <div className="container-main section-padding">
@@ -233,7 +141,7 @@ export default function Cart() {
             </div>
           ))}
         </div>
-      ) : cartItems.length === 0 ? (
+      ) : validCartItems.length === 0 ? (
         <div className="mx-auto max-w-2xl rounded-3xl border border-white/10 bg-slate-900/60 p-10 text-center backdrop-blur-xl">
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-400/10 text-cyan-300">
             <HiOutlineShoppingBag className="h-8 w-8" />
@@ -252,7 +160,7 @@ export default function Cart() {
       ) : (
         <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1.6fr_0.9fr]">
           <div className="space-y-4">
-            {cartItems.map((item, index) => (
+            {validCartItems.map((item, index) => (
               <MotionDiv
                 key={item._id}
                 initial={{ opacity: 0, y: 16 }}
@@ -262,9 +170,9 @@ export default function Cart() {
               >
                 <div className="flex flex-col gap-4 md:flex-row md:items-center">
                   <div className="h-24 w-24 overflow-hidden rounded-2xl border border-white/10 bg-slate-800 shrink-0">
-                    {item.product.imageUrl ? (
+                    {item.product.imageFile || item.product.imageUrl ? (
                       <img
-                        src={item.product.imageUrl}
+                        src={item.product.imageFile || item.product.imageUrl}
                         alt={item.product.name}
                         className="h-full w-full object-cover"
                       />
@@ -297,7 +205,8 @@ export default function Cart() {
                     <div className="mt-4 flex flex-wrap items-center gap-3">
                       <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200">
                         <button
-                          onClick={() => updateQty(item._id, item.quantity - 1)}
+                          onClick={() => updateQty(item.product._id, item.quantity - 1)}
+                          disabled={isUpdatingCart}
                           className="rounded-full p-1 text-slate-300 transition hover:bg-white/10 hover:text-white"
                           aria-label={`Decrease quantity for ${item.product.name}`}
                         >
@@ -307,7 +216,8 @@ export default function Cart() {
                           {item.quantity}
                         </span>
                         <button
-                          onClick={() => updateQty(item._id, item.quantity + 1)}
+                          onClick={() => updateQty(item.product._id, item.quantity + 1)}
+                          disabled={isUpdatingCart}
                           className="rounded-full p-1 text-slate-300 transition hover:bg-white/10 hover:text-white"
                           aria-label={`Increase quantity for ${item.product.name}`}
                         >
@@ -315,14 +225,19 @@ export default function Cart() {
                         </button>
                       </div>
 
-                      <button className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300 transition hover:border-cyan-400/30 hover:text-cyan-300">
+                      <button
+                        onClick={() => updateQuantity(item.product._id, item.quantity)}
+                        disabled={isUpdatingCart}
+                        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300 transition hover:border-cyan-400/30 hover:text-cyan-300 disabled:opacity-50"
+                      >
                         <HiOutlineRefresh className="h-4 w-4" />
                         Update
                       </button>
 
                       <button
-                        onClick={() => removeItem(item.product._id)}
-                        className="inline-flex items-center gap-2 rounded-full border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-sm text-rose-300 transition hover:bg-rose-500/20 hover:text-rose-200"
+                        onClick={() => removeFromCart(item.product._id)}
+                        disabled={isUpdatingCart}
+                        className="inline-flex items-center gap-2 rounded-full border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-sm text-rose-300 transition hover:bg-rose-500/20 hover:text-rose-200 disabled:opacity-50"
                       >
                         <HiOutlineTrash className="h-4 w-4" />
                         Remove
@@ -431,7 +346,14 @@ export default function Cart() {
                   Proceed to Checkout <HiArrowRight className="h-4 w-4" />
                 </Link>
                 <button
-                  onClick={downloadInvoicePdf}
+                  onClick={() =>
+                    downloadInvoicePdf({
+                      cartItems: validCartItems,
+                      subtotal,
+                      shipping,
+                      total,
+                    })
+                  }
                   className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-slate-200 transition hover:border-cyan-400/30 hover:text-cyan-300"
                 >
                   Download PDF Preview <HiArrowRight className="h-4 w-4" />
@@ -446,6 +368,17 @@ export default function Cart() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {isLoading && (
+        <div className="fixed bottom-6 right-6 z-20 rounded-full border border-white/10 bg-slate-950/75 px-4 py-2 backdrop-blur-xl">
+          <LoadingSpinner
+            size="xs"
+            label="Syncing cart..."
+            className="text-xs text-slate-200"
+            colorClass="border-cyan-300/30 border-t-cyan-300"
+          />
         </div>
       )}
     </div>
