@@ -7,6 +7,7 @@ import { MotionWrapperAuth } from "../../components/common/MotionWrapperAuth.jsx
 
 import PerksPanel from "../../components/common/PerksPanel.jsx";
 import PasswordInput from "../../components/common/PasswordInput.jsx";
+import { useUserStore } from "../../stores/useUserStore.jsx";
 
 const perks = [
   {
@@ -29,21 +30,30 @@ const perks = [
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { isLoading, login } = useUserStore();
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}$/;
 
-  const isFormInvalid = loading || !email || !password;
+  const isFormInvalid = isLoading || !email || !password;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     console.log("Logging in with:", { email, password });
-    setLoading(true);
+    if (!email || !password) {
+      return toast.error("Email and password are required");
+    }
+    if (!emailRegex.test(email)) {
+      return toast.error("Please enter a valid email address");
+    }
 
-    setTimeout(() => {
-      toast.success("Welcome back to HardWorx.");
-      setLoading(false);
+    if (!password || password.length < 6) {
+      return toast.error("Password must be at least 6 characters long");
+    }
+
+    const loggedInUser = await login(email, password);
+    if (loggedInUser.success) {
       setEmail("");
       setPassword("");
-    }, 900);
+    }
   };
 
   return (
@@ -120,7 +130,7 @@ export default function Login() {
                 className="w-full rounded-xl bg-linear-to-r from-violet-500 to-cyan-500 py-3 text-sm font-semibold text-white shadow-md transition-all hover:scale-[1.01] hover:shadow-[0_0_24px_rgba(24,230,245,0.25)] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {" "}
-                {loading ? "Logging in..." : "Log In"}{" "}
+                {isLoading ? "Logging in..." : "Log In"}{" "}
               </button>
             </MotionWrapperAuth>
 

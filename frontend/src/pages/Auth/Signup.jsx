@@ -70,6 +70,7 @@ export default function Signup() {
     );
 
     if (createdUser) {
+      console.log("User created:", createdUser);
       setFormData({
         name: "",
         lastname: "",
