@@ -1,10 +1,8 @@
 import toast from "react-hot-toast";
 import { create } from "zustand";
 import axios from "../lib/axios.js";
-import { Navigate } from "react-router-dom";
-import { get } from "mongoose";
 
-export const useUserStore = create((set) => ({
+export const useUserStore = create((set, get) => ({
   user: null,
   isLoading: false,
   checkingAuth: true,

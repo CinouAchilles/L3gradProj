@@ -1,118 +1,69 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { HiArrowRight, HiOutlineShoppingCart } from "react-icons/hi";
 import { FiPackage, FiShield, FiTruck, FiStar } from "react-icons/fi";
+import { useProductStore } from "../../stores/useProductStore";
+import { useCartStore } from "./useCartStore";
 
 const MotionDiv = motion.div;
-
-const catalog = [
-  {
-    _id: "1",
-    name: "iPhone 13",
-    price: 180000,
-    imageUrl: "https://via.placeholder.com/900x900.png?text=iPhone+13",
-    category: "Phones",
-    rating: 4.8,
-    reviews: 324,
-    description:
-      "Latest iPhone with A15 Bionic chip, ProMotion display, and advanced camera system.",
-    highlights: [
-      "6.1-inch Super Retina display",
-      "A15 Bionic chip",
-      "Advanced dual-camera system",
-      "All-day battery life",
-    ],
-    specs: {
-      Storage: "128 GB",
-      Color: "Midnight",
-      Display: "6.1-inch OLED",
-      Warranty: "12 months",
-    },
-  },
-  {
-    _id: "2",
-    name: "AirPods Pro",
-    price: 35000,
-    imageUrl: "https://via.placeholder.com/900x900.png?text=AirPods+Pro",
-    category: "Accessories",
-    rating: 4.6,
-    reviews: 218,
-    description:
-      "Premium wireless earbuds with active noise cancellation and spatial audio.",
-    highlights: [
-      "Active Noise Cancellation",
-      "Spatial Audio support",
-      "Wireless charging case",
-      "Comfort-fit design",
-    ],
-    specs: {
-      Battery: "Up to 24 hours",
-      Connectivity: "Bluetooth 5.3",
-      Controls: "Touch gesture",
-      Warranty: "12 months",
-    },
-  },
-  {
-    _id: "3",
-    name: "Samsung S22",
-    price: 150000,
-    imageUrl: "https://via.placeholder.com/900x900.png?text=Samsung+S22",
-    category: "Phones",
-    rating: 4.7,
-    reviews: 456,
-    description:
-      "Flagship smartphone with Snapdragon processor and stunning AMOLED display.",
-    highlights: [
-      "Dynamic AMOLED display",
-      "Pro-grade camera system",
-      "Fast charging support",
-      "Premium aluminum frame",
-    ],
-    specs: {
-      Storage: "256 GB",
-      Color: "Phantom Black",
-      Display: "6.1-inch AMOLED",
-      Warranty: "12 months",
-    },
-  },
-  {
-    _id: "4",
-    name: "PlayStation 5",
-    price: 300000,
-    imageUrl: "https://via.placeholder.com/900x900.png?text=PS5",
-    category: "Consoles",
-    rating: 4.9,
-    reviews: 892,
-    description:
-      "Next-gen gaming console with ultra-high speed SSD and ray tracing support.",
-    highlights: [
-      "Ultra-fast SSD",
-      "4K gaming ready",
-      "DualSense support",
-      "Ray tracing performance",
-    ],
-    specs: {
-      Storage: "825 GB SSD",
-      Color: "White",
-      Output: "4K / 120Hz",
-      Warranty: "12 months",
-    },
-  },
-];
 
 export default function ProductDetails() {
   const { id } = useParams();
 
-  const product = useMemo(
-    () => catalog.find((item) => item._id === id),
-    [id]
-  );
+  const {
+    currentProduct,
+    recommendedProducts,
+    isLoadingProducts,
+    fetchProductById,
+    fetchRecommendedProducts,
+  } = useProductStore();
+  const { addToCart, isUpdatingCart } = useCartStore();
+
+  useEffect(() => {
+    if (!id) return;
+    fetchProductById(id);
+    fetchRecommendedProducts();
+  }, [id, fetchProductById, fetchRecommendedProducts]);
+
+  const product = currentProduct;
 
   const relatedProducts = useMemo(
-    () => catalog.filter((item) => item._id !== id).slice(0, 3),
-    [id]
+    () => recommendedProducts.filter((item) => item._id !== id).slice(0, 3),
+    [recommendedProducts, id],
   );
+
+  const highlights = useMemo(() => {
+    if (!product?.description) return [];
+    return product.description
+      .split(".")
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .slice(0, 4);
+  }, [product]);
+
+    const specs = useMemo(
+    () => ({
+      Category: product?.category || "General",
+      Price: `${Number(product?.price || 0).toLocaleString()} DA`,
+      // Featured: product?.isFeatured ? "Yes" : "No",
+      // Warranty: "12 months",
+    }),
+    [product],
+  );
+
+    if (isLoadingProducts) {
+    return (
+      <div className="container-main section-padding">
+        <div className="mx-auto max-w-3xl rounded-3xl border border-white/10 bg-slate-900/60 p-10 text-center backdrop-blur-xl text-slate-300">
+          Loading product details...
+        </div>
+      </div>
+    );
+  }
+
+
+
 
   if (!product) {
     return (
@@ -122,10 +73,10 @@ export default function ProductDetails() {
             Product Not Found
           </p>
           <h1 className="mt-4 font-display text-3xl font-bold text-white">
-            This product is not in the current mock catalog.
+            This product could not be found.
           </h1>
           <p className="mt-3 text-slate-400">
-            The backend endpoint is ready now, so this page can later switch to real product data without changing the layout.
+            It may have been removed, unpublished, or the link is invalid.
           </p>
           <Link
             to="/shop"
@@ -165,7 +116,7 @@ export default function ProductDetails() {
         >
           <div className="aspect-square bg-slate-950/50 p-6">
             <img
-              src={product.imageUrl}
+              src={product.imageFile || product.imageUrl}
               alt={product.name}
               className="h-full w-full rounded-2xl object-cover"
             />
@@ -192,12 +143,6 @@ export default function ProductDetails() {
           </div>
 
           <div className="mt-5 flex items-center gap-3 text-sm text-slate-300">
-            <div className="flex items-center gap-1 text-yellow-400">
-              <FiStar className="h-4 w-4 fill-current" />
-              <span>{product.rating}</span>
-            </div>
-            <span>({product.reviews} reviews)</span>
-            <span className="text-slate-500">•</span>
             <span>In stock</span>
           </div>
 
@@ -216,11 +161,15 @@ export default function ProductDetails() {
 
           <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Link
-              to="/cart"
+              to="#"
+              onClick={(event) => {
+                event.preventDefault();
+                addToCart(product._id);
+              }}
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-linear-to-r from-violet-500 to-cyan-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 transition hover:opacity-95"
             >
               <HiOutlineShoppingCart className="h-4 w-4" />
-              Add to Cart
+              {isUpdatingCart ? "Adding..." : "Add to Cart"}
             </Link>
             <Link
               to="/checkout"
@@ -258,7 +207,7 @@ export default function ProductDetails() {
             Key Highlights
           </p>
           <ul className="mt-4 space-y-3 text-slate-300">
-            {product.highlights.map((item) => (
+            {highlights.map((item) => (
               <li key={item} className="flex items-start gap-3">
                 <span className="mt-2 h-2 w-2 rounded-full bg-cyan-300" />
                 <span>{item}</span>
@@ -277,7 +226,7 @@ export default function ProductDetails() {
             Technical Specs
           </p>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {Object.entries(product.specs).map(([label, value]) => (
+            {Object.entries(specs).map(([label, value]) => (
               <div key={label} className="rounded-2xl border border-white/10 bg-white/5 p-4">
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{label}</p>
                 <p className="mt-2 text-sm font-medium text-white">{value}</p>
@@ -311,7 +260,7 @@ export default function ProductDetails() {
             >
               <div className="aspect-square overflow-hidden rounded-xl bg-slate-950/50">
                 <img
-                  src={item.imageUrl}
+                  src={item.imageFile || item.imageUrl}
                   alt={item.name}
                   className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                 />

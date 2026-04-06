@@ -61,50 +61,59 @@ export const deleteWholeProductFromCart = async (req, res) => {
 export const updateTheQuantityOfProductInCart = async (req, res) => {
   try {
     const { id: productId } = req.params;
-    const { quantity } = req.body || {}; // safe destructuring
-
+    const { quantity } = req.body;
     if (!mongoose.Types.ObjectId.isValid(productId)) {
       return res.status(400).json({ message: "Invalid product ID" });
     }
 
-    if (quantity === undefined) {
-      return res.status(400).json({ message: "Quantity is required" });
+    const qty = Number(quantity);
+    if (isNaN(qty)) {
+      return res.status(400).json({ message: "Quantity must be a number" });
     }
-    const user = req.user;
 
-    const item = user.cartItems.find(
-      (item) => item.product.toString() === productId,
+    const user = req.user; // make sure auth middleware populates req.user
+
+    // Find the item in the cart
+    const itemIndex = user.cartItems.findIndex(
+      (item) => item.product.toString() === productId
     );
-    if (item) {
-      if (quantity < 1) {
-        user.cartItems = user.cartItems.filter(
-          (item) => item.product.toString() !== productId,
-        );
-        await user.save();
-        return res.json({
-          message: "Product removed from cart successfully",
-          cart: user.cartItems,
-        });
-      } else if (quantity > 3) {
-        return res.status(400).json({
-          message: "Maximum quantity for this product is 3",
-          cart: user.cartItems,
-        });
-      }
-      item.quantity = quantity;
-      await user.save();
-      return res.json({
-        message: "Product quantity updated successfully",
-        cart: user.cartItems,
-      });
-    } else {
+
+    if (itemIndex === -1) {
       return res.status(404).json({ message: "Product not found in cart" });
     }
+
+    // Handle removing item if quantity < 1
+    if (qty < 1) {
+      user.cartItems.splice(itemIndex, 1);
+      await user.save();
+      return res.json({
+        message: "Product removed from cart successfully",
+        cart: user.cartItems,
+      });
+    }
+
+    // Enforce max quantity
+    if (qty > 3) {
+      return res.status(400).json({
+        message: "Maximum quantity for this product is 3",
+        cart: user.cartItems,
+      });
+    }
+
+    // Update quantity
+    user.cartItems[itemIndex].quantity = qty;
+    await user.save();
+
+    return res.json({
+      message: "Product quantity updated successfully",
+      cart: user.cartItems,
+    });
+
   } catch (error) {
-    console.error("Error updating product quantity in cart: " + error.message);
-    return res
-      .status(500)
-      .json({ message: "Error updating product quantity in cart" });
+    console.error("Error updating product quantity in cart:", error);
+    return res.status(500).json({
+      message: "Error updating product quantity in cart",
+    });
   }
 };
 
