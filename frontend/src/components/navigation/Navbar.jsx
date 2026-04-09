@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { FiShoppingCart, FiUser, FiMenu, FiX } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useUserStore } from "../../stores/useUserStore";
@@ -15,11 +15,12 @@ const navItems = [
 
 export function Navbar() {
   const [search, setSearch] = useState("");
-  const { user , logout } = useUserStore();
+  const { user, logout } = useUserStore();
   const { fetchCart, getTotalItems } = useCartStore();
   const navigate = useNavigate();
   const role = user?.role;
   const cartCount = getTotalItems();
+  const location = useLocation();
 
   useEffect(() => {
     if (!user) return;
@@ -43,6 +44,14 @@ export function Navbar() {
     const q = search.trim();
     navigate(q ? `/shop?search=${encodeURIComponent(q)}` : "/shop");
   };
+  const closeDrawer = () => {
+    const drawer = document.getElementById("mobile-nav-drawer");
+    if (drawer) drawer.checked = false;
+  };
+
+  useEffect(() => {
+    closeDrawer();
+  }, [location]);
 
   return (
     <header className="sticky top-4 z-40 mx-auto w-[95%] max-w-7xl">
@@ -112,11 +121,18 @@ export function Navbar() {
 
           {/* Mobile Actions */}
           <div className="drawer drawer-end lg:hidden">
-            <input id="mobile-nav-drawer" type="checkbox" className="drawer-toggle" />
+            <input
+              id="mobile-nav-drawer"
+              type="checkbox"
+              className="drawer-toggle"
+            />
 
             <div className="drawer-content">
               <div className="flex items-center justify-end gap-1 sm:gap-2">
-                <MotionDiv whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                <MotionDiv
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
                   <Link
                     to="/cart"
                     className="btn btn-ghost btn-circle relative"
@@ -134,7 +150,10 @@ export function Navbar() {
                   </Link>
                 </MotionDiv>
 
-                <MotionDiv whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                <MotionDiv
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
                   <label
                     htmlFor="mobile-nav-drawer"
                     className="btn btn-ghost btn-circle"
@@ -147,13 +166,23 @@ export function Navbar() {
             </div>
 
             <div className="drawer-side z-50">
-              <label htmlFor="mobile-nav-drawer" aria-label="close sidebar" className="drawer-overlay" />
+              <label
+                htmlFor="mobile-nav-drawer"
+                aria-label="close sidebar"
+                className="drawer-overlay"
+              />
               <div className="menu min-h-full w-80 max-w-[90vw] gap-5 bg-slate-950/95 p-5 text-base-content backdrop-blur-xl">
                 <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                  <Link to="/" className="text-xl font-black tracking-wide text-white">
+                  <Link
+                    to="/"
+                    className="text-xl font-black tracking-wide text-white"
+                  >
                     Hard<span className="text-cyan-400">Worx</span>
                   </Link>
-                  <label htmlFor="mobile-nav-drawer" className="btn btn-ghost btn-circle">
+                  <label
+                    htmlFor="mobile-nav-drawer"
+                    className="btn btn-ghost btn-circle"
+                  >
                     <FiX size={18} />
                   </label>
                 </div>
@@ -229,7 +258,11 @@ export function Navbar() {
           </div>
 
           {/* Desktop Cart */}
-          <MotionDiv className="hidden lg:block" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+          <MotionDiv
+            className="hidden lg:block"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+          >
             <Link
               to="/cart"
               className="btn btn-ghost btn-circle relative"
