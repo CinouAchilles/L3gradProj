@@ -25,8 +25,8 @@ app.use(
 );
 app.use(express.json()); // Middleware to parse JSON bodies
 app.use(cookieParser()); // Middleware to parse cookies
-app.get("/", (req, res) => {
-  res.send("Hello World in Express.js!");
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ message: "API is running" });
 });
 
 app.use("/api/auth", authRouter);
