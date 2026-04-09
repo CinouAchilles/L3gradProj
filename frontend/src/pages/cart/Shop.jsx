@@ -5,19 +5,26 @@ import { HiOutlineSearch, HiOutlineShoppingCart } from "react-icons/hi";
 import { toast } from "react-hot-toast";
 import { useProductStore } from "../../stores/useProductStore";
 import { useCartStore } from "../../stores/useCartStore";
+import { useUserStore } from "../../stores/useUserStore";
 
 const MotionDiv = motion.div;
 
 export default function Shop() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const categoryFilter = searchParams.get("category") || "";
-  const [search, setSearch] = useState("");
+  const searchQuery = searchParams.get("search") || "";
+  const [search, setSearch] = useState(searchQuery);
   const { products, fetchProducts, isLoadingProducts } = useProductStore();
   const { cartItems, addToCart, isUpdatingCart } = useCartStore();
+  const { user } = useUserStore();
 
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
+
+  useEffect(() => {
+    setSearch(searchQuery);
+  }, [searchQuery]);
 
   // Extract unique categories
   const categories = useMemo(
@@ -28,12 +35,29 @@ export default function Shop() {
   // Filter products locally
   const filtered = products.filter((p) => {
     const matchSearch =
-      !search || p.name.toLowerCase().includes(search.toLowerCase());
+      !searchQuery ||
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.category?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchCat =
       !categoryFilter ||
       p.category?.toLowerCase() === categoryFilter.toLowerCase();
     return matchSearch && matchCat;
   });
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    const q = search.trim();
+    const nextParams = new URLSearchParams(searchParams);
+
+    if (q) {
+      nextParams.set("search", q);
+    } else {
+      nextParams.delete("search");
+    }
+
+    setSearchParams(nextParams);
+  };
 
   // Simulate loading (optional, remove if you don't want)
   const isLoading = isLoadingProducts;
@@ -70,17 +94,23 @@ export default function Shop() {
         transition={{ delay: 0.15 }}
         className="mb-10"
       >
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <form onSubmit={handleSearchSubmit} className="mb-6 flex flex-col gap-4 sm:flex-row">
           <div className="relative flex-1">
-            <HiOutlineSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <HiOutlineSearch className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search products by name..."
-              className="w-full pl-12 pr-4 py-3 rounded-xl border border-white/10 bg-slate-900/60 backdrop-blur-xl text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all"
+              placeholder="Search by name, category, or description..."
+              className="w-full rounded-xl border border-white/10 bg-slate-900/60 py-3 pl-12 pr-4 text-slate-100 placeholder:text-slate-500 transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
             />
           </div>
-        </div>
+          <button
+            type="submit"
+            className="rounded-xl bg-linear-to-r from-violet-500 to-cyan-500 px-5 py-3 text-sm font-semibold text-white sm:px-6"
+          >
+            Search
+          </button>
+        </form>
 
         {/* Category Pills */}
         <div className="flex flex-wrap gap-2">
@@ -123,6 +153,7 @@ export default function Shop() {
           {filtered.map((p, i) => {
             const inCartQty = getItemQty(p._id);
             const reachedLimit = inCartQty >= 3;
+            const isGuest = !user;
             return (
             <MotionDiv
               key={p._id}
@@ -170,14 +201,24 @@ export default function Shop() {
                     <button
                       onClick={(event) => {
                         event.preventDefault();
+                        if (isGuest) {
+                          toast.error("Please login to add products to cart");
+                          return;
+                        }
                         if (reachedLimit) {
                           toast.error("Maximum quantity is 3 for this product");
                           return;
                         }
                         addToCart(p._id);
                       }}
-                      disabled={isUpdatingCart || reachedLimit}
-                      title={reachedLimit ? "Maximum quantity reached" : "Add to cart"}
+                      disabled={ isUpdatingCart || reachedLimit}
+                      title={
+                        isGuest
+                          ? "Login required"
+                          : reachedLimit
+                            ? "Maximum quantity reached"
+                            : "Add to cart"
+                      }
                       className="p-2 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-400 transition-colors disabled:opacity-50"
                     >
                       <HiOutlineShoppingCart className="w-5 h-5" />

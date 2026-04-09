@@ -6,6 +6,7 @@ import { FiPackage, FiShield, FiTruck } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 import { useProductStore } from "../../stores/useProductStore";
 import { useCartStore } from "../../stores/useCartStore";
+import { useUserStore } from "../../stores/useUserStore";
 
 const MotionDiv = motion.div;
 
@@ -20,6 +21,7 @@ export default function ProductDetails() {
     fetchRecommendedProducts,
   } = useProductStore();
   const { cartItems, addToCart, isUpdatingCart } = useCartStore();
+  const { user } = useUserStore();
 
   useEffect(() => {
     if (!id) return;
@@ -51,6 +53,7 @@ export default function ProductDetails() {
     : 0;
 
   const reachedLimit = inCartQty >= 3;
+  const isGuest = !user;
 
     const specs = useMemo(
     () => ({
@@ -173,18 +176,28 @@ export default function ProductDetails() {
             <button
               onClick={(event) => {
                 event.preventDefault();
+                if (isGuest) {
+                  toast.error("Please login to add products to cart");
+                  return;
+                }
                 if (reachedLimit) {
                   toast.error("Maximum quantity is 3 for this product");
                   return;
                 }
                 addToCart(product._id);
               }}
-              disabled={isUpdatingCart || reachedLimit}
+              disabled={isGuest || isUpdatingCart || reachedLimit}
               type="button"
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-linear-to-r from-violet-500 to-cyan-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 transition hover:opacity-95"
             >
               <HiOutlineShoppingCart className="h-4 w-4" />
-              {isUpdatingCart ? "Adding..." : reachedLimit ? "Max Quantity Reached" : "Add to Cart"}
+              {isGuest
+                ? "Login to Add"
+                : isUpdatingCart
+                  ? "Adding..."
+                  : reachedLimit
+                    ? "Max Quantity Reached"
+                    : "Add to Cart"}
             </button>
             <Link
               to="/checkout"

@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "react-hot-toast";
 import {
   HiOutlineChartBar,
   HiOutlineCurrencyDollar,
@@ -61,9 +62,24 @@ const emptyProductForm = {
   category: "",
   description: "",
   imageUrl: "",
+  imageFile: "",
   price: "",
   isFeatured: false,
 };
+
+const defaultCategorySuggestions = [
+  "ram",
+  "gpu",
+  "cpu",
+  "motherboard",
+  "storage",
+  "psu",
+  "case",
+  "cooling",
+  "monitor",
+  "accessories",
+  "ready config",
+];
 
 export default function AdminDashboard() {
   const [tab, setTab] = useState("analytics");
@@ -146,6 +162,7 @@ export default function AdminDashboard() {
       category: product.category,
       description: product.description,
       imageUrl: product.imageUrl || product.imageFile || "",
+      imageFile: "",
       price: String(product.price),
       isFeatured: product.isFeatured,
     });
@@ -160,10 +177,46 @@ export default function AdminDashboard() {
 
   const onProductFormChange = (event) => {
     const { name, type, checked, value } = event.target;
+
+    if (name === "imageUrl") {
+      setProductForm((prev) => ({
+        ...prev,
+        imageUrl: value,
+        imageFile: value.trim() ? "" : prev.imageFile,
+      }));
+      return;
+    }
+
     setProductForm((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+  };
+
+  const onProductImageFileChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload a valid image file");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64Image = typeof reader.result === "string" ? reader.result : "";
+      if (!base64Image) {
+        toast.error("Failed to read image file");
+        return;
+      }
+      setProductForm((prev) => ({
+        ...prev,
+        imageFile: base64Image,
+        imageUrl: "",
+      }));
+    };
+    reader.onerror = () => toast.error("Failed to read image file");
+    reader.readAsDataURL(file);
   };
 
   const saveProduct = async () => {
@@ -172,12 +225,20 @@ export default function AdminDashboard() {
     const cleanedDescription = productForm.description.trim();
     const cleanedImage = productForm.imageUrl.trim();
     const numericPrice = Number(productForm.price);
+    const hasUploadedImage = Boolean(productForm.imageFile);
 
-    if (!cleanedName || !cleanedCategory || !cleanedDescription || !cleanedImage) {
+    if (!cleanedName || !cleanedCategory || !cleanedDescription) {
+      toast.error("Please fill all required fields");
+      return;
+    }
+
+    if (!cleanedImage && !hasUploadedImage) {
+      toast.error("Please provide an image URL or upload an image");
       return;
     }
 
     if (!Number.isFinite(numericPrice) || numericPrice < 0) {
+      toast.error("Price must be a valid non-negative number");
       return;
     }
 
@@ -185,7 +246,8 @@ export default function AdminDashboard() {
       name: cleanedName,
       category: cleanedCategory,
       description: cleanedDescription,
-      imageUrl: cleanedImage,
+      imageUrl: cleanedImage || undefined,
+      imageFile: hasUploadedImage ? productForm.imageFile : undefined,
       price: numericPrice,
       isFeatured: productForm.isFeatured,
     };
@@ -350,11 +412,19 @@ export default function AdminDashboard() {
       productForm.name.trim() &&
       productForm.category.trim() &&
       productForm.description.trim() &&
-      productForm.imageUrl.trim() &&
+      (productForm.imageUrl.trim() || productForm.imageFile) &&
       Number.isFinite(Number(productForm.price)) &&
       Number(productForm.price) >= 0
     );
   }, [productForm]);
+
+  const categorySuggestions = useMemo(() => {
+    const existing = products
+      .map((p) => (p.category || "").trim().toLowerCase())
+      .filter(Boolean);
+
+    return Array.from(new Set([...defaultCategorySuggestions, ...existing])).sort();
+  }, [products]);
 
   if (isLoadingDashboard) {
     return (
@@ -561,6 +631,9 @@ export default function AdminDashboard() {
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Catalog Controls</p>
               <h3 className="mt-1 text-lg font-semibold text-white">Manage products visually</h3>
+              {isLoadingProducts && (
+                <p className="mt-1 text-xs text-cyan-300">Syncing product list...</p>
+              )}
             </div>
             <button
               onClick={openCreateProduct}
@@ -607,9 +680,18 @@ export default function AdminDashboard() {
                     name="category"
                     value={productForm.category}
                     onChange={onProductFormChange}
+                    list="admin-category-suggestions"
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:border-cyan-400/40 focus:outline-none"
-                    placeholder="Phones, Accessories..."
+                    placeholder="ram, gpu, cpu..."
                   />
+                  <datalist id="admin-category-suggestions">
+                    {categorySuggestions.map((cat) => (
+                      <option key={cat} value={cat} />
+                    ))}
+                  </datalist>
+                  <p className="text-xs text-slate-400">
+                    Suggestions include existing categories and common hardware types.
+                  </p>
                 </label>
                 <label className="space-y-2">
                   <span className="text-sm text-slate-300">Price (DA)</span>
@@ -624,7 +706,7 @@ export default function AdminDashboard() {
                   />
                 </label>
                 <label className="space-y-2">
-                  <span className="text-sm text-slate-300">Image URL</span>
+                  <span className="text-sm text-slate-300">Image URL (optional if uploading)</span>
                   <input
                     name="imageUrl"
                     value={productForm.imageUrl}
@@ -633,7 +715,32 @@ export default function AdminDashboard() {
                     placeholder="https://..."
                   />
                 </label>
+                <label className="space-y-2">
+                  <span className="text-sm text-slate-300">Upload Image</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={onProductImageFileChange}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200 file:mr-3 file:rounded-lg file:border-0 file:bg-cyan-500/20 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-cyan-200"
+                  />
+                  <p className="text-xs text-slate-400">
+                    Uploading an image will override the image URL field.
+                  </p>
+                </label>
               </div>
+
+              {(productForm.imageUrl || productForm.imageFile) && (
+                <div className="mt-4">
+                  <p className="mb-2 text-xs uppercase tracking-[0.16em] text-slate-400">Image Preview</p>
+                  <div className="overflow-hidden rounded-xl border border-white/10 bg-slate-950/40 p-2">
+                    <img
+                      src={productForm.imageFile || productForm.imageUrl}
+                      alt="Product preview"
+                      className="h-40 w-full rounded-lg object-cover"
+                    />
+                  </div>
+                </div>
+              )}
 
               <label className="mt-4 block space-y-2">
                 <span className="text-sm text-slate-300">Description</span>

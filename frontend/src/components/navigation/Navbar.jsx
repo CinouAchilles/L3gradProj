@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { FiShoppingCart, FiUser, FiMenu, FiX } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useUserStore } from "../../stores/useUserStore";
@@ -17,6 +17,7 @@ export function Navbar() {
   const [search, setSearch] = useState("");
   const { user , logout } = useUserStore();
   const { fetchCart, getTotalItems } = useCartStore();
+  const navigate = useNavigate();
   const role = user?.role;
   const cartCount = getTotalItems();
 
@@ -36,6 +37,12 @@ export function Navbar() {
   ];
 
   const mobileNavItems = [...navItems];
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    const q = search.trim();
+    navigate(q ? `/shop?search=${encodeURIComponent(q)}` : "/shop");
+  };
 
   return (
     <header className="sticky top-4 z-40 mx-auto w-[95%] max-w-7xl">
@@ -84,7 +91,7 @@ export function Navbar() {
         {/* Right Side */}
         <div className="navbar-end gap-1 sm:gap-2">
           {/* Search */}
-          <form className="hidden md:block">
+          <form className="hidden md:block" onSubmit={handleSearchSubmit}>
             <label className="relative">
               <input
                 type="search"

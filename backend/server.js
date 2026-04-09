@@ -14,16 +14,31 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const clientOrigin = process.env.CLIENT_URL || "http://localhost:5173";
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://l3gradproj.onrender.com",
+].filter(Boolean);
 const __dirname = path.resolve();
 
 app.use(
   cors({
-    origin: clientOrigin,
+    origin: (origin, callback) => {
+      // Allow non-browser requests (no Origin header)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`Not allowed by CORS: ${origin}`));
+    },
     credentials: true,
   }),
 );
-app.use(express.json()); // Middleware to parse JSON bodies
+app.use(express.json({ limit: "10mb" })); // Allow base64 image payloads
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cookieParser()); // Middleware to parse cookies
 app.get("/api/health", (req, res) => {
   res.status(200).json({ message: "API is running" });

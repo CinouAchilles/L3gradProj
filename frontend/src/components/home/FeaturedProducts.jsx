@@ -5,6 +5,7 @@ import { HiArrowRight, HiOutlineShoppingCart } from "react-icons/hi2";
 import { toast } from "react-hot-toast";
 import { useProductStore } from "../../stores/useProductStore";
 import { useCartStore } from "../../stores/useCartStore";
+import { useUserStore } from "../../stores/useUserStore";
 
 const MotionDiv = motion.div;
 
@@ -12,6 +13,7 @@ export default function FeaturedProducts() {
   const { featuredProducts, fetchFeaturedProducts, isLoadingFeatured } =
     useProductStore();
   const { cartItems, addToCart, isUpdatingCart } = useCartStore();
+  const { user } = useUserStore();
 
   useEffect(() => {
     fetchFeaturedProducts();
@@ -85,6 +87,7 @@ export default function FeaturedProducts() {
               {carouselProducts.map((p, i) => {
               const inCartQty = getItemQty(p._id);
               const reachedLimit = inCartQty >= 3;
+              const isGuest = !user;
               return (
               <MotionDiv
                 key={`${p._id}-${i}`}
@@ -143,14 +146,24 @@ export default function FeaturedProducts() {
                       <button
                         onClick={(event) => {
                           event.preventDefault();
+                          if (isGuest) {
+                            toast.error("Please login to add products to cart");
+                            return;
+                          }
                           if (reachedLimit) {
                             toast.error("Maximum quantity is 3 for this product");
                             return;
                           }
                           addToCart(p._id);
                         }}
-                        disabled={isUpdatingCart || reachedLimit}
-                        title={reachedLimit ? "Maximum quantity reached" : "Add to cart"}
+                        disabled={isGuest || isUpdatingCart || reachedLimit}
+                        title={
+                          isGuest
+                            ? "Login required"
+                            : reachedLimit
+                              ? "Maximum quantity reached"
+                              : "Add to cart"
+                        }
                         className="rounded-lg bg-cyan-500/20 p-2 text-cyan-400 transition-colors hover:bg-cyan-500/40 disabled:opacity-50"
                       >
                         <HiOutlineShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
