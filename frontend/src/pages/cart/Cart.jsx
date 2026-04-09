@@ -1,13 +1,13 @@
 import { useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { toast } from "react-hot-toast";
 import { useCartStore } from "../../stores/useCartStore.jsx";
 import LoadingSpinner from "../../components/common/LoadingSpinner.jsx";
 
 import {
   HiArrowRight,
   HiMinus,
-  HiOutlineRefresh,
   HiOutlineShoppingBag,
   HiOutlineTrash,
   HiPlus,
@@ -22,8 +22,6 @@ import {
 import downloadInvoicePdf from "../../lib/downloadInvoicePdf";
 
 const MotionDiv = motion.div;
-
-const freeShippingThreshold = 250000;
 
 export default function Cart() {
   const {
@@ -59,13 +57,19 @@ export default function Cart() {
     0
   );
 
-  const shipping = subtotal >= freeShippingThreshold || subtotal === 0 ? 0 : 1200;
+  const shipping = 0;
   const total = subtotal + shipping;
-  const progress = Math.min((subtotal / freeShippingThreshold) * 100, 100);
-  const remainingToFreeShipping = Math.max(freeShippingThreshold - subtotal, 0);
   const totalItems = validCartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   const isLoading = isLoadingCart;
+
+  const handleIncreaseQty = (productId, currentQty) => {
+    if (currentQty >= 3) {
+      toast.error("You can only add up to 3 of the same product");
+      return;
+    }
+    updateQty(productId, currentQty + 1);
+  };
 
   return (
     <div className="container-main section-padding">
@@ -169,7 +173,10 @@ export default function Cart() {
                 className="rounded-2xl border border-white/10 bg-slate-900/60 p-4 backdrop-blur-xl transition hover:border-cyan-400/30"
               >
                 <div className="flex flex-col gap-4 md:flex-row md:items-center">
-                  <div className="h-24 w-24 overflow-hidden rounded-2xl border border-white/10 bg-slate-800 shrink-0">
+                  <Link
+                    to={`/product/${item.product._id}`}
+                    className="h-24 w-24 overflow-hidden rounded-2xl border border-white/10 bg-slate-800 shrink-0"
+                  >
                     {item.product.imageFile || item.product.imageUrl ? (
                       <img
                         src={item.product.imageFile || item.product.imageUrl}
@@ -181,7 +188,7 @@ export default function Cart() {
                         No Image
                       </div>
                     )}
-                  </div>
+                  </Link>
 
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -189,9 +196,12 @@ export default function Cart() {
                         <p className="text-xs uppercase tracking-[0.2em] text-cyan-300/80">
                           {item.product.category || "Hardware"}
                         </p>
-                        <h2 className="mt-1 truncate text-lg font-semibold text-white">
+                        <Link
+                          to={`/product/${item.product._id}`}
+                          className="mt-1 block truncate text-lg font-semibold text-white hover:text-cyan-300"
+                        >
                           {item.product.name}
-                        </h2>
+                        </Link>
                         <p className="mt-2 text-sm text-slate-400">
                           Ready for checkout review
                         </p>
@@ -216,7 +226,7 @@ export default function Cart() {
                           {item.quantity}
                         </span>
                         <button
-                          onClick={() => updateQty(item.product._id, item.quantity + 1)}
+                          onClick={() => handleIncreaseQty(item.product._id, item.quantity)}
                           disabled={isUpdatingCart}
                           className="rounded-full p-1 text-slate-300 transition hover:bg-white/10 hover:text-white"
                           aria-label={`Increase quantity for ${item.product.name}`}
@@ -224,15 +234,6 @@ export default function Cart() {
                           <HiPlus className="h-4 w-4" />
                         </button>
                       </div>
-
-                      <button
-                        onClick={() => updateQuantity(item.product._id, item.quantity)}
-                        disabled={isUpdatingCart}
-                        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300 transition hover:border-cyan-400/30 hover:text-cyan-300 disabled:opacity-50"
-                      >
-                        <HiOutlineRefresh className="h-4 w-4" />
-                        Update
-                      </button>
 
                       <button
                         onClick={() => removeFromCart(item.product._id)}
@@ -287,24 +288,6 @@ export default function Cart() {
                   <span>Total</span>
                   <span className="text-gradient">{total.toLocaleString()} DA</span>
                 </div>
-              </div>
-
-              <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="mb-3 flex items-center justify-between text-sm text-slate-300">
-                  <span>Free shipping progress</span>
-                  <span>{Math.round(progress)}%</span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-slate-800">
-                  <div
-                    className="h-full rounded-full bg-linear-to-r from-violet-500 to-cyan-500"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-                <p className="mt-3 text-sm text-slate-400">
-                  {remainingToFreeShipping === 0
-                    ? "You already unlocked free shipping."
-                    : `${remainingToFreeShipping.toLocaleString()} DA left to unlock free shipping.`}
-                </p>
               </div>
 
               <div className="mt-6 grid grid-cols-2 gap-3 text-sm">

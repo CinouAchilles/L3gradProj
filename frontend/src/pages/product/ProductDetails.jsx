@@ -2,7 +2,8 @@ import { useEffect, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { HiArrowRight, HiOutlineShoppingCart } from "react-icons/hi";
-import { FiPackage, FiShield, FiTruck, FiStar } from "react-icons/fi";
+import { FiPackage, FiShield, FiTruck } from "react-icons/fi";
+import { toast } from "react-hot-toast";
 import { useProductStore } from "../../stores/useProductStore";
 import { useCartStore } from "../../stores/useCartStore";
 
@@ -18,7 +19,7 @@ export default function ProductDetails() {
     fetchProductById,
     fetchRecommendedProducts,
   } = useProductStore();
-  const { addToCart, isUpdatingCart } = useCartStore();
+  const { cartItems, addToCart, isUpdatingCart } = useCartStore();
 
   useEffect(() => {
     if (!id) return;
@@ -41,6 +42,15 @@ export default function ProductDetails() {
       .filter(Boolean)
       .slice(0, 4);
   }, [product]);
+
+  const inCartQty = product?._id
+    ? Number(
+        cartItems.find((cartItem) => cartItem.product?._id === product._id)
+          ?.quantity || 0,
+      )
+    : 0;
+
+  const reachedLimit = inCartQty >= 3;
 
     const specs = useMemo(
     () => ({
@@ -160,17 +170,22 @@ export default function ProductDetails() {
           </div>
 
           <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Link
-              to="#"
+            <button
               onClick={(event) => {
                 event.preventDefault();
+                if (reachedLimit) {
+                  toast.error("Maximum quantity is 3 for this product");
+                  return;
+                }
                 addToCart(product._id);
               }}
+              disabled={isUpdatingCart || reachedLimit}
+              type="button"
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-linear-to-r from-violet-500 to-cyan-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 transition hover:opacity-95"
             >
               <HiOutlineShoppingCart className="h-4 w-4" />
-              {isUpdatingCart ? "Adding..." : "Add to Cart"}
-            </Link>
+              {isUpdatingCart ? "Adding..." : reachedLimit ? "Max Quantity Reached" : "Add to Cart"}
+            </button>
             <Link
               to="/checkout"
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-slate-200 transition hover:border-cyan-400/30 hover:text-cyan-300"

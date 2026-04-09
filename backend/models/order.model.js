@@ -61,7 +61,7 @@ const orderSchema = new mongoose.Schema(
       required: true,
     },
 
-    trackingNumber: {
+    trackingCode: {
       type: String,
       required: true,
       unique: true,
@@ -110,6 +110,13 @@ const orderSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+orderSchema.virtual("trackingNumber").get(function () {
+  return this.trackingCode;
+});
+
+orderSchema.set("toJSON", { virtuals: true });
+orderSchema.set("toObject", { virtuals: true });
 
 orderSchema.pre("validate", function () {
   this.subtotal = this.items.reduce((acc, item) => {

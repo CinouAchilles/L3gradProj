@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useEffect } from "react";
 import { HiArrowRight, HiOutlineShoppingCart } from "react-icons/hi2";
+import { toast } from "react-hot-toast";
 import { useProductStore } from "../../stores/useProductStore";
 import { useCartStore } from "../../stores/useCartStore";
 
@@ -10,14 +11,20 @@ const MotionDiv = motion.div;
 export default function FeaturedProducts() {
   const { featuredProducts, fetchFeaturedProducts, isLoadingFeatured } =
     useProductStore();
-  const { addToCart, isUpdatingCart } = useCartStore();
+  const { cartItems, addToCart, isUpdatingCart } = useCartStore();
 
   useEffect(() => {
     fetchFeaturedProducts();
   }, [fetchFeaturedProducts]);
 
   const products = featuredProducts;
+  console.log("Featured products:", products);
   const isLoading = isLoadingFeatured;
+
+  const getItemQty = (productId) => {
+    const item = cartItems.find((cartItem) => cartItem.product?._id === productId);
+    return Number(item?.quantity || 0);
+  };
 
   return (
     <section className="section-padding relative">
@@ -68,7 +75,10 @@ export default function FeaturedProducts() {
           </div>
         ) : products.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {products.map((p, i) => (
+            {products.map((p, i) => {
+              const inCartQty = getItemQty(p._id);
+              const reachedLimit = inCartQty >= 3;
+              return (
               <MotionDiv
                 key={p._id}
                 initial={{ opacity: 0, y: 20 }}
@@ -121,9 +131,14 @@ export default function FeaturedProducts() {
                       <button
                         onClick={(event) => {
                           event.preventDefault();
+                          if (reachedLimit) {
+                            toast.error("Maximum quantity is 3 for this product");
+                            return;
+                          }
                           addToCart(p._id);
                         }}
-                        disabled={isUpdatingCart}
+                        disabled={isUpdatingCart || reachedLimit}
+                        title={reachedLimit ? "Maximum quantity reached" : "Add to cart"}
                         className="p-2 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-400 transition-colors disabled:opacity-50"
                       >
                         <HiOutlineShoppingCart className="w-5 h-5" />
@@ -132,7 +147,8 @@ export default function FeaturedProducts() {
                   </div>
                 </Link>
               </MotionDiv>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-16">

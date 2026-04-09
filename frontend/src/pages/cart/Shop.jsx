@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { HiOutlineSearch, HiOutlineShoppingCart } from "react-icons/hi";
-import { MdStar } from "react-icons/md";
+import { toast } from "react-hot-toast";
 import { useProductStore } from "../../stores/useProductStore";
 import { useCartStore } from "../../stores/useCartStore";
 
@@ -13,7 +13,7 @@ export default function Shop() {
   const categoryFilter = searchParams.get("category") || "";
   const [search, setSearch] = useState("");
   const { products, fetchProducts, isLoadingProducts } = useProductStore();
-  const { addToCart, isUpdatingCart } = useCartStore();
+  const { cartItems, addToCart, isUpdatingCart } = useCartStore();
 
   useEffect(() => {
     fetchProducts();
@@ -37,6 +37,11 @@ export default function Shop() {
 
   // Simulate loading (optional, remove if you don't want)
   const isLoading = isLoadingProducts;
+
+  const getItemQty = (productId) => {
+    const item = cartItems.find((cartItem) => cartItem.product?._id === productId);
+    return Number(item?.quantity || 0);
+  };
 
   return (
     <div className="container-main section-padding">
@@ -115,7 +120,10 @@ export default function Shop() {
         </div>
       ) : filtered.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filtered.map((p, i) => (
+          {filtered.map((p, i) => {
+            const inCartQty = getItemQty(p._id);
+            const reachedLimit = inCartQty >= 3;
+            return (
             <MotionDiv
               key={p._id}
               initial={{ opacity: 0, y: 20 }}
@@ -162,9 +170,14 @@ export default function Shop() {
                     <button
                       onClick={(event) => {
                         event.preventDefault();
+                        if (reachedLimit) {
+                          toast.error("Maximum quantity is 3 for this product");
+                          return;
+                        }
                         addToCart(p._id);
                       }}
-                      disabled={isUpdatingCart}
+                      disabled={isUpdatingCart || reachedLimit}
+                      title={reachedLimit ? "Maximum quantity reached" : "Add to cart"}
                       className="p-2 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-400 transition-colors disabled:opacity-50"
                     >
                       <HiOutlineShoppingCart className="w-5 h-5" />
@@ -173,7 +186,8 @@ export default function Shop() {
                 </div>
               </Link>
             </MotionDiv>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="text-center py-20">

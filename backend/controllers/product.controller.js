@@ -36,12 +36,21 @@ export const getProductById = async (req, res) => {
 
 export const getFeaturedProducts = async (req, res) => {
   try {
-    let featuredProducts = await redis.get("featuredProducts");
-    if (featuredProducts) {
-      return res.json({ products: JSON.parse(featuredProducts) });
+    const cachedFeaturedProducts = await redis.get("featuredProducts");
+    if (cachedFeaturedProducts) {
+      try {
+        const featuredProducts =
+          typeof cachedFeaturedProducts === "string"
+            ? JSON.parse(cachedFeaturedProducts)
+            : cachedFeaturedProducts;
+
+        return res.json({ products: featuredProducts });
+      } catch (parseError) {
+        console.warn("Invalid featuredProducts cache, rebuilding from DB");
+      }
     }
 
-    featuredProducts = await Product.find({ isFeatured: true }).lean();
+    const featuredProducts = await Product.find({ isFeatured: true }).lean();
     if (featuredProducts.length === 0) {
       return res.json({ products: [] });
     }
@@ -345,8 +354,8 @@ export const toggleFeaturedStatus = async (req, res) => {
 
 async function updateFeaturedFromCache() {
   try {
-    const featruedProduct = await Product.find({ isFeatured: true }).lean();
-    await redis.set("featuredProducts", JSON.stringify(featruedProduct));
+    const featuredProducts = await Product.find({ isFeatured: true }).lean();
+    await redis.set("featuredProducts", JSON.stringify(featuredProducts));
   } catch (error) {
     console.log("error in update the cache function ");
   }

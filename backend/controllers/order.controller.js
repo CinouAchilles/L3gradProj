@@ -18,6 +18,7 @@ const generateTrackingNumber = () => {
 
 export const createOrder = async (req, res) => {
   try {
+
     const user = req.user;
 
     if (!user) {
@@ -27,20 +28,19 @@ export const createOrder = async (req, res) => {
     const { customer, paymentMethod } = req.body || {};
 
     if (!customer) {
-      return res
-        .status(400)
-        .json({ message: "Customer information is required" });
+      return res.status(400).json({ message: "Customer information is required" });
     }
 
     const { firstName, lastName, phone, address, postalCode } = customer;
     if (!firstName || !lastName || !phone || !address || !postalCode) {
+      console.log("❌ Missing customer fields", customer);
       return res.status(400).json({
-        message:
-          "firstName, lastName, phone, address, and postalCode are required",
+        message: "firstName, lastName, phone, address, and postalCode are required",
       });
     }
 
     if (!user.cartItems || user.cartItems.length === 0) {
+      console.log("❌ Cart is empty");
       return res.status(400).json({ message: "Cart is empty" });
     }
 
@@ -48,39 +48,53 @@ export const createOrder = async (req, res) => {
 
     const invalidCartItem = user.cartItems.find((item) => !item.product);
     if (invalidCartItem) {
+      console.log("❌ Invalid cart item (product missing):", invalidCartItem);
       return res.status(400).json({
         message: "One or more products in the cart no longer exist",
       });
     }
 
-    const items = user.cartItems.map((cartItem) => ({
-      product: cartItem.product._id,
-      name: cartItem.product.name,
-      price: Number(cartItem.product.price),
-      image: cartItem.product.imageFile || cartItem.product.imageUrl,
-      quantity: Number(cartItem.quantity),
-      lineTotal: Number(cartItem.product.price) * Number(cartItem.quantity),
-    }));
+    const items = [];
+    for (const cartItem of user.cartItems) {
 
-    const trackingNumber = generateTrackingNumber();
+      const quantity = Number(cartItem.quantity);
+      if (quantity > 3) {
+        console.log("❌ Quantity exceeds 3 for product:", cartItem.product.name);
+        return res.status(400).json({
+          message: `Max quantity per product is 3. Problem with: ${cartItem.product.name}`,
+        });
+      }
+
+      items.push({
+        product: cartItem.product._id,
+        name: cartItem.product.name,
+        price: Number(cartItem.product.price),
+        image: cartItem.product.imageFile || cartItem.product.imageUrl,
+        quantity,
+      });
+    }
+
+
+    const trackingCode = generateTrackingNumber();
 
     const order = await Order.create({
       user: user._id,
-      trackingNumber,
+      trackingCode,
       paymentMethod: paymentMethod || "cash_on_delivery",
       customer,
       items,
     });
 
-    user.cartItems = [];
-    await user.save();
+
+    await user.updateOne({ $set: { cartItems: [] } });
 
     return res.status(201).json({
+      success: true,
       message: "Order created successfully",
       order,
     });
   } catch (error) {
-    console.error("Error creating order:", error);
+    console.error(" FULL ERROR creating order:", error);
     return res.status(500).json({ message: "Error creating order" });
   }
 };
@@ -114,7 +128,7 @@ export const getOrderByTrackingCode = async (req, res) => {
     }
 
     const order = await Order.findOne({
-      trackingNumber: trackingCode.toUpperCase(),
+      trackingCode: trackingCode.toUpperCase(),
     })
       .populate("user", "name email")
       .populate("items.product", "name price imageFile imageUrl");
