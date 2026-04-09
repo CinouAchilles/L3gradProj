@@ -35,6 +35,7 @@ import {
 import axios from "../../lib/axios.js";
 import { useProductStore } from "../../stores/useProductStore.jsx";
 import LoadingSpinner from "../../components/common/LoadingSpinner.jsx";
+import { Link } from "react-router-dom";
 
 const MotionH1 = motion.h1;
 const MotionDiv = motion.div;
@@ -580,51 +581,127 @@ export default function AdminDashboard() {
 
       {tab === "orders" && (
         <AnimatedGlassPanel className="overflow-x-auto p-2">
-          <table className="w-full min-w-170 text-sm text-slate-200">
+          <table className="w-full min-w-[1200px] text-sm text-slate-200">
             <thead>
               <tr className="text-left text-xs uppercase tracking-[0.16em] text-slate-400">
                 <th className="px-4 py-3">Code</th>
                 <th className="px-4 py-3">Customer</th>
+                <th className="px-4 py-3">Phone</th>
+                <th className="px-4 py-3">Address</th>
+                <th className="px-4 py-3">Postal</th>
+                <th className="px-4 py-3">Qty</th>
                 <th className="px-4 py-3">Total</th>
+                <th className="px-4 py-3">Payment</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Update</th>
+                <th className="px-4 py-3">Products</th>
               </tr>
             </thead>
+
             <tbody>
-              {orders.map((o) => (
-                <tr key={o._id} className="border-t border-white/8">
-                  <td className="px-4 py-3 font-medium text-cyan-300">{o.trackingNumber}</td>
-                  <td className="px-4 py-3">
-                    {o.customer.firstName} {o.customer.lastName}
-                  </td>
-                  <td className="px-4 py-3">{o.subtotal.toLocaleString()} DA</td>
-                  <td className="px-4 py-3">
-                    <StatusPill
-                      className={statusBadgeClass(o.status)}
-                      label={o.status.replace(/_/g, " ")}
-                    />
-                  </td>
-                  <td className="px-4 py-3">
-                    <select
-                      value={o.status}
-                      onChange={(e) => updateOrderStatus(o._id, e.target.value)}
-                      disabled={isSyncingOrders}
-                      className="rounded-lg border border-white/15 bg-white/5 px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400/30"
-                    >
-                      {statusOptions.map((s) => (
-                        <option key={s} value={s} className="bg-slate-900 text-slate-100">
-                          {s.replace(/_/g, " ")}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                </tr>
-              ))}
+              {orders.map((o) => {
+                const totalQty = o.items.reduce(
+                  (acc, item) => acc + item.quantity,
+                  0
+                );
+
+                return (
+                  <tr key={o._id} className="border-t border-white/8">
+                    
+                    {/* Code */}
+                    <td className="px-4 py-3 font-medium text-cyan-300">
+                      {o.trackingNumber}
+                    </td>
+
+                    {/* Customer */}
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col">
+                        <span>
+                          {o.customer.firstName} {o.customer.lastName}
+                        </span>
+                        <span className="text-xs text-slate-400">
+                          {o.user?.email}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* Phone */}
+                    <td className="px-4 py-3">{o.customer.phone}</td>
+
+                    {/* Address */}
+                    <td className="px-4 py-3 max-w-50 truncate">
+                      {o.customer.address}
+                    </td>
+
+                    {/* Postal Code */}
+                    <td className="px-4 py-3">{o.customer.postalCode}</td>
+
+                    {/* Quantity */}
+                    <td className="px-4 py-3 text-center font-semibold">
+                      {totalQty}
+                    </td>
+
+                    {/* Total */}
+                    <td className="px-4 py-3 font-semibold">
+                      {o.subtotal.toLocaleString()} DA
+                    </td>
+
+                    {/* Payment */}
+                    <td className="px-4 py-3 capitalize">{o.paymentMethod}</td>
+
+                    {/* Status */}
+                    <td className="px-4 py-3">
+                      <StatusPill
+                        className={statusBadgeClass(o.status)}
+                        label={o.status.replace(/_/g, " ")}
+                      />
+                    </td>
+
+                    {/* Update */}
+                    <td className="px-4 py-3">
+                      <select
+                        value={o.status}
+                        onChange={(e) =>
+                          updateOrderStatus(o._id, e.target.value)
+                        }
+                        disabled={isSyncingOrders}
+                        className="rounded-lg border border-white/15 bg-white/5 px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400/30"
+                      >
+                        {statusOptions.map((s) => (
+                          <option
+                            key={s}
+                            value={s}
+                            className="bg-slate-900 text-slate-100"
+                          >
+                            {s.replace(/_/g, " ")}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+
+                    {/* Products */}
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col space-y-1">
+                        {o.items.map((item, i) => (
+                          <Link
+                            key={i}
+                            to={`/product/${item.product}`}
+                            rel="noopener noreferrer"
+                            className="text-cyan-400 hover:underline text-xs"
+                          >
+                            {item.name} × {item.quantity}
+                          </Link>
+                        ))}
+                      </div>
+                    </td>
+
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </AnimatedGlassPanel>
       )}
-
       {tab === "products" && (
         <MotionDiv initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-900/60 p-4 backdrop-blur-xl">
@@ -802,7 +879,10 @@ export default function AdminDashboard() {
                 {products.map((p) => (
                   <tr key={p._id} className="border-t border-white/8">
                     <td className="px-4 py-3">
-                      <p className="font-medium">{p.name}</p>
+                      {/* <p className="font-medium">{p.name}</p> */}
+                      <Link to={`/product/${p._id}`} className="text-cyan-400 hover:underline">
+                        {p.name}
+                      </Link>
                       <p className="max-w-52 truncate text-xs text-slate-400">{p.description}</p>
                     </td>
                     <td className="px-4 py-3 text-slate-300">{p.category}</td>

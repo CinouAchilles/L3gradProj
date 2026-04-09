@@ -72,7 +72,7 @@ export const useProductStore = create((set, get) => ({
     set({ isSavingProduct: true });
     try {
       const res = await axios.post("/products/createproduct", productData);
-      set((state) => ({ products: [...state.products, res.data.product] }));
+      await get().fetchProducts();
       toast.success("Product created successfully!");
       return { success: true, product: res.data.product };
     } catch (error) {
@@ -90,10 +90,8 @@ export const useProductStore = create((set, get) => ({
     set({ isSavingProduct: true });
     try {
       const res = await axios.patch(`/products/updateproduct/${id}`, updatedData);
+      await get().fetchProducts();
       set((state) => ({
-        products: state.products.map((p) =>
-          p._id === id ? res.data.product || p : p,
-        ),
         currentProduct:
           state.currentProduct?._id === id
             ? res.data.product || state.currentProduct
