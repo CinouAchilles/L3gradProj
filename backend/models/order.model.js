@@ -61,7 +61,7 @@ const orderSchema = new mongoose.Schema(
       required: true,
     },
 
-    trackingCode: {
+    trackingNumber: {
       type: String,
       required: true,
       unique: true,
@@ -110,10 +110,6 @@ const orderSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
-orderSchema.virtual("trackingNumber").get(function () {
-  return this.trackingCode;
-});
 
 orderSchema.set("toJSON", { virtuals: true });
 orderSchema.set("toObject", { virtuals: true });

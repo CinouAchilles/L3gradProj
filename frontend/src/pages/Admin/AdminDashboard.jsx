@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
+import swal from "sweetalert";
 import {
   HiOutlineChartBar,
   HiOutlineCurrencyDollar,
@@ -134,6 +135,31 @@ export default function AdminDashboard() {
       await axios.patch(`/orders/${id}/status`, { status });
     } catch {
       setOrders(previous);
+    } finally {
+      setIsSyncingOrders(false);
+    }
+  };
+
+  const deleteOrder = async (id) => {
+    const confirmed = await swal({
+      title: "Delete this order?",
+      text: "This action cannot be undone.",
+      icon: "warning",
+      buttons: ["Cancel", "Delete"],
+      dangerMode: true,
+    });
+    if (!confirmed) return;
+
+    const previous = orders;
+    setIsSyncingOrders(true);
+    setOrders((prev) => prev.filter((o) => o._id !== id));
+
+    try {
+      await axios.delete(`/orders/${id}`);
+      toast.success("Order deleted");
+    } catch (error) {
+      setOrders(previous);
+      toast.error(error.response?.data?.message || "Failed to delete order");
     } finally {
       setIsSyncingOrders(false);
     }
@@ -594,6 +620,7 @@ export default function AdminDashboard() {
                 <th className="px-4 py-3">Payment</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Update</th>
+                <th className="px-4 py-3">Actions</th>
                 <th className="px-4 py-3">Products</th>
               </tr>
             </thead>
@@ -677,6 +704,17 @@ export default function AdminDashboard() {
                           </option>
                         ))}
                       </select>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => deleteOrder(o._id)}
+                        disabled={isSyncingOrders}
+                        className="rounded-lg border border-rose-300/30 bg-rose-400/10 px-3 py-1.5 text-xs font-semibold text-rose-300 transition hover:bg-rose-400/20 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Delete
+                      </button>
                     </td>
 
                     {/* Products */}

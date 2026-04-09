@@ -49,7 +49,7 @@ function App() {
         <Route path="/shop" element={<Shop />} />
         <Route path="/product/:id" element={<ProductDetails />} />
         <Route path="/track" element={<TrackOrder />} />
-        <Route path="/track/:trackingCode" element={<TrackOrder />} />
+        <Route path="/track/:trackingNumber" element={<TrackOrder />} />
 
         {/* 🔓 Auth  */}
         <Route

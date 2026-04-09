@@ -75,11 +75,11 @@ export const createOrder = async (req, res) => {
     }
 
 
-    const trackingCode = generateTrackingNumber();
+    const trackingNumber = generateTrackingNumber();
 
     const order = await Order.create({
       user: user._id,
-      trackingCode,
+      trackingNumber,
       paymentMethod: paymentMethod || "cash_on_delivery",
       customer,
       items,
@@ -120,15 +120,16 @@ export const getMyOrders = async (req, res) => {
       .json({ message: "Error occurred while retrieving orders" });
   }
 };
-export const getOrderByTrackingCode = async (req, res) => {
+export const getOrderByTrackingNumber = async (req, res) => {
   try {
-    const { trackingCode } = req.params;
-    if (!trackingCode) {
-      return res.status(400).json({ message: "Tracking code is required" });
+    const { trackingNumber } = req.params;
+    if (!trackingNumber) {
+      return res.status(400).json({ message: "Tracking number is required" });
     }
 
+    const normalizedTrackingNumber = trackingNumber.toUpperCase();
     const order = await Order.findOne({
-      trackingCode: trackingCode.toUpperCase(),
+      trackingNumber: normalizedTrackingNumber,
     })
       .populate("user", "name email")
       .populate("items.product", "name price imageFile imageUrl");
@@ -202,5 +203,50 @@ export const updateOrderStatus = async (req, res) => {
     return res
       .status(500)
       .json({ message: "Error occurred while updating order status" });
+  }
+};
+
+export const deleteOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = req.user;
+
+    if (!user) {
+      return res.status(401).json({ message: "User is not authenticated" });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid order ID" });
+    }
+
+    const order = await Order.findById(id);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    const isAdmin = user.role === "admin";
+    const isOwner = order.user?.toString() === user._id.toString();
+
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ message: "Not allowed to delete this order" });
+    }
+
+    if (!isAdmin && order.status !== "pending") {
+      return res.status(400).json({
+        message: "You can only delete orders that are still pending",
+      });
+    }
+
+    await order.deleteOne();
+
+    return res.status(200).json({
+      message: "Order deleted successfully",
+      orderId: id,
+    });
+  } catch (error) {
+    console.error("Error deleting order:", error);
+    return res
+      .status(500)
+      .json({ message: "Error occurred while deleting order" });
   }
 };

@@ -8,6 +8,7 @@ export const useOrderStore = create((set) => ({
   trackedOrder: null,
   isLoadingOrders: false,
   isCreatingOrder: false,
+  isDeletingOrder: false,
 
   createOrder: async (payload) => {
     set({ isCreatingOrder: true });
@@ -35,10 +36,10 @@ export const useOrderStore = create((set) => ({
     }
   },
 
-  trackOrder: async (trackingCode) => {
+  trackOrder: async (trackingNumber) => {
     set({ isLoadingOrders: true, trackedOrder: null });
     try {
-      const res = await axios.get(`/orders/track/${trackingCode}`);
+      const res = await axios.get(`/orders/track/${trackingNumber}`);
       set({ trackedOrder: res.data.order || null });
       return res.data.order || null;
     } catch (error) {
@@ -86,6 +87,27 @@ export const useOrderStore = create((set) => ({
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to update status");
       return false;
+    }
+  },
+
+  deleteOrder: async (id) => {
+    set({ isDeletingOrder: true });
+    try {
+      await axios.delete(`/orders/${id}`);
+      set((state) => ({
+        allOrders: state.allOrders.filter((o) => o._id !== id),
+        myOrders: state.myOrders.filter((o) => o._id !== id),
+        trackedOrder:
+          state.trackedOrder?._id === id ? null : state.trackedOrder,
+      }));
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Failed to delete order",
+      };
+    } finally {
+      set({ isDeletingOrder: false });
     }
   },
 }));

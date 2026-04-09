@@ -45,25 +45,25 @@ const statusMeta = {
 
 export default function TrackOrder() {
   const { trackOrder, isLoadingOrders } = useOrderStore();
-  const { trackingCode } = useParams();
-  const [input, setInput] = useState(trackingCode || "");
+  const { trackingNumber } = useParams();
+  const [input, setInput] = useState(trackingNumber || "");
   const [order, setOrder] = useState(null);
 
   useEffect(() => {
     const loadInitialOrder = async () => {
-      if (!trackingCode) return;
-      const foundOrder = await trackOrder(trackingCode);
+      if (!trackingNumber) return;
+      const foundOrder = await trackOrder(trackingNumber);
       setOrder(foundOrder);
     };
 
     loadInitialOrder();
-  }, [trackingCode, trackOrder]);
+  }, [trackingNumber, trackOrder]);
 
   const handleTrack = async (e) => {
     e.preventDefault();
     const trimmed = input.trim();
     if (!trimmed) {
-      toast.error("Please enter a tracking code");
+      toast.error("Please enter a tracking number");
       return;
     }
 
@@ -134,7 +134,7 @@ export default function TrackOrder() {
         </MotionH1>
 
         <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
-          Enter your tracking code to see the latest status, items, and order summary.
+          Enter your tracking number to see the latest status, items, and order summary.
         </p>
 
         <MotionDiv
@@ -150,7 +150,7 @@ export default function TrackOrder() {
                 <input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Enter tracking code..."
+                  placeholder="Enter tracking number..."
                   className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-sm text-slate-100 placeholder:text-slate-400 transition focus:border-cyan-400/40 focus:outline-none focus:ring-2 focus:ring-cyan-400/30"
                 />
               </div>
@@ -195,7 +195,7 @@ export default function TrackOrder() {
                   No order loaded yet
                 </h2>
                 <p className="text-sm leading-relaxed text-slate-400">
-                  Use a tracking code from your order confirmation to load the order
+                  Use a tracking number from your order confirmation to load the order
                   summary here.
                 </p>
               </div>
@@ -208,10 +208,10 @@ export default function TrackOrder() {
                 <div className="flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-5">
                   <div>
                     <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
-                      Tracking Code
+                      Tracking Number
                     </p>
                     <p className="mt-2 text-lg font-semibold text-slate-100">
-                        {order.trackingNumber}
+                      {order.trackingNumber}
                     </p>
                   </div>
 
