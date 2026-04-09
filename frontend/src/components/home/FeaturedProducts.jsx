@@ -18,8 +18,8 @@ export default function FeaturedProducts() {
   }, [fetchFeaturedProducts]);
 
   const products = featuredProducts;
-  console.log("Featured products:", products);
   const isLoading = isLoadingFeatured;
+  const carouselProducts = products.length > 1 ? [...products, ...products] : products;
 
   const getItemQty = (productId) => {
     const item = cartItems.find((cartItem) => cartItem.product?._id === productId);
@@ -36,20 +36,20 @@ export default function FeaturedProducts() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12"
+          className="mb-10 flex flex-col gap-4 sm:mb-12 sm:flex-row sm:items-end sm:justify-between"
         >
-          <div>
-            <h2 className="font-display text-4xl sm:text-5xl font-bold mb-2">
+            <div className="max-w-2xl">
+              <h2 className="font-display mb-2 text-3xl font-bold sm:text-4xl lg:text-5xl">
               Featured <span className="text-gradient">Picks</span>
             </h2>
-            <p className="text-slate-400 text-lg">
+              <p className="text-sm text-slate-400 sm:text-base lg:text-lg">
               Hand-selected top performers just for you
             </p>
           </div>
 
           <Link
             to="/shop"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/30 text-cyan-300 transition-all hover:gap-3 font-medium"
+              className="inline-flex w-fit items-center gap-2 rounded-xl bg-cyan-500/15 px-4 py-2 text-sm font-medium text-cyan-300 transition-all hover:gap-3 hover:bg-cyan-500/30 sm:text-base"
           >
             View All{" "}
             <HiArrowRight className="w-5 h-5" />
@@ -74,58 +74,70 @@ export default function FeaturedProducts() {
             ))}
           </div>
         ) : products.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {products.map((p, i) => {
+          <div className="group overflow-hidden rounded-4xl border border-white/10 bg-slate-950/30 p-2 sm:p-3 lg:p-4">
+            <div
+              className={`flex items-stretch gap-3 sm:gap-4 lg:gap-6 ${
+                products.length > 1
+                  ? "w-max py-1 will-change-transform motion-safe:animate-[featured-marquee_30s_linear_infinite] group-hover:[animation-play-state:paused]"
+                  : "w-full flex-wrap"
+              }`}
+            >
+              {carouselProducts.map((p, i) => {
               const inCartQty = getItemQty(p._id);
               const reachedLimit = inCartQty >= 3;
               return (
               <MotionDiv
-                key={p._id}
+                key={`${p._id}-${i}`}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
+                transition={{ delay: (i % products.length) * 0.08 }}
+                className={`shrink-0 ${
+                  products.length > 1
+                    ? "w-[78vw] max-w-75 sm:w-75 md:w-80 lg:w-85"
+                    : "w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(25%-1.125rem)]"
+                }`}
               >
                 <Link
                   to={`/product/${p._id}`}
-                  className="group block rounded-2xl border border-white/10 bg-slate-900/55 backdrop-blur-xl overflow-hidden hover:border-cyan-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/10"
+                  className="group/card block h-full overflow-hidden rounded-2xl border border-white/10 bg-slate-900/55 backdrop-blur-xl transition-all duration-300 hover:border-cyan-500/40 hover:shadow-lg hover:shadow-cyan-500/10"
                 >
                   {/* Featured Badge */}
-                  <div className="absolute top-3 right-3 z-10 bg-linear-to-r from-violet-500 to-cyan-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                  <div className="absolute right-3 top-3 z-10 rounded-full bg-linear-to-r from-violet-500 to-cyan-500 px-3 py-1 text-xs font-semibold text-white shadow-lg shadow-cyan-500/10">
                     Featured
                   </div>
 
                   {/* Image */}
-                  <div className="aspect-square bg-slate-800 overflow-hidden relative">
+                  <div className="relative aspect-4/3 overflow-hidden bg-slate-800 sm:aspect-square">
                     {p.imageFile || p.imageUrl ? (
                       <img
                         src={p.imageFile || p.imageUrl}
                         alt={p.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover/card:scale-110"
                         loading="lazy"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-500 text-sm">
+                      <div className="flex h-full w-full items-center justify-center text-sm text-slate-500">
                         No Image
                       </div>
                     )}
                   </div>
 
                   {/* Content */}
-                  <div className="p-4 border-t border-white/5">
-                    <p className="text-xs text-cyan-400 uppercase tracking-wider mb-1 font-semibold">
+                  <div className="border-t border-white/5 p-4 sm:p-5">
+                    <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-cyan-400 sm:text-xs">
                       {p.category || "Hardware"}
                     </p>
-                    <h3 className="font-semibold text-sm text-slate-100 line-clamp-2 mb-2">
+                    <h3 className="mb-2 line-clamp-2 text-sm font-semibold text-slate-100 sm:text-[15px]">
                       {p.name}
                     </h3>
-                    <p className="text-xs text-slate-400 line-clamp-2 mb-3">
+                    <p className="mb-3 line-clamp-2 text-xs text-slate-400 sm:text-sm">
                       {p.description}
                     </p>
 
                     {/* Price & CTA */}
                     <div className="flex items-center justify-between">
-                      <p className="font-display text-lg font-bold bg-linear-to-r from-cyan-300 to-violet-300 bg-clip-text text-transparent">
+                      <p className="font-display text-base font-bold bg-linear-to-r from-cyan-300 to-violet-300 bg-clip-text text-transparent sm:text-lg">
                         {p.price.toLocaleString()} DA
                       </p>
                       <button
@@ -139,16 +151,17 @@ export default function FeaturedProducts() {
                         }}
                         disabled={isUpdatingCart || reachedLimit}
                         title={reachedLimit ? "Maximum quantity reached" : "Add to cart"}
-                        className="p-2 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-400 transition-colors disabled:opacity-50"
+                        className="rounded-lg bg-cyan-500/20 p-2 text-cyan-400 transition-colors hover:bg-cyan-500/40 disabled:opacity-50"
                       >
-                        <HiOutlineShoppingCart className="w-5 h-5" />
+                        <HiOutlineShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
                       </button>
                     </div>
                   </div>
                 </Link>
               </MotionDiv>
               );
-            })}
+              })}
+            </div>
           </div>
         ) : (
           <div className="text-center py-16">
@@ -158,6 +171,18 @@ export default function FeaturedProducts() {
           </div>
         )}
       </div>
+
+      <style>{`
+        @keyframes featured-marquee {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(calc(-50% - 0.5rem));
+          }
+        }
+
+      `}</style>
     </section>
   );
 }

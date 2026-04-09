@@ -15,6 +15,7 @@ export const useProductStore = create((set, get) => ({
     set({ isLoadingProducts: true });
     try {
       const res = await axios.get("/products");
+      console.log("Fetched products:", res.data.products);
       set({ products: res.data.products || [] });
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to load products");

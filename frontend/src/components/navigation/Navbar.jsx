@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
-import { FiShoppingCart, FiUser } from "react-icons/fi";
+import { FiShoppingCart, FiUser, FiMenu, FiX } from "react-icons/fi";
 import { motion } from "framer-motion";
 import { useUserStore } from "../../stores/useUserStore";
 import { useCartStore } from "../../stores/useCartStore";
@@ -35,20 +35,22 @@ export function Navbar() {
     "Case",
   ];
 
+  const mobileNavItems = [...navItems];
+
   return (
     <header className="sticky top-4 z-40 mx-auto w-[95%] max-w-7xl">
-      <div className="navbar glass-card rounded-2xl px-4 md:px-6 backdrop-blur-xl border border-white/10">
+      <div className="navbar glass-card rounded-2xl px-3 backdrop-blur-xl border border-white/10 sm:px-4 md:px-6">
         {/* Logo */}
         <div className="navbar-start">
           <Link
             to="/"
-            className="text-xl font-black tracking-wide text-white hover:opacity-90 transition"
+            className="text-lg font-black tracking-wide text-white transition hover:opacity-90 sm:text-xl"
           >
             Hard<span className="text-cyan-400">Worx</span>
           </Link>
         </div>
 
-        {/* Nav Links */}
+        {/* Desktop Nav Links */}
         <div className="navbar-center hidden lg:flex">
           <ul className="menu menu-horizontal gap-3 px-1">
             {navItems.map((item) => (
@@ -80,7 +82,7 @@ export function Navbar() {
         </div>
 
         {/* Right Side */}
-        <div className="navbar-end gap-2">
+        <div className="navbar-end gap-1 sm:gap-2">
           {/* Search */}
           <form className="hidden md:block">
             <label className="relative">
@@ -90,7 +92,7 @@ export function Navbar() {
                 onChange={(e) => setSearch(e.target.value)}
                 list="header-search-suggestions"
                 placeholder="Search components..."
-                className="h-10 w-56 lg:w-72 rounded-xl bg-white/5 border border-white/10 px-4 text-sm text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:border-cyan-400 transition"
+                className="h-10 w-48 rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-white placeholder:text-slate-400 transition focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 lg:w-72"
               />
             </label>
 
@@ -101,27 +103,143 @@ export function Navbar() {
             </datalist>
           </form>
 
-          {/* Cart */}
-          <MotionDiv whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-            <label
-              htmlFor="cart-drawer"
+          {/* Mobile Actions */}
+          <div className="drawer drawer-end lg:hidden">
+            <input id="mobile-nav-drawer" type="checkbox" className="drawer-toggle" />
+
+            <div className="drawer-content">
+              <div className="flex items-center justify-end gap-1 sm:gap-2">
+                <MotionDiv whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                  <Link
+                    to="/cart"
+                    className="btn btn-ghost btn-circle relative"
+                    aria-label="Go to cart"
+                  >
+                    <FiShoppingCart size={18} />
+
+                    {/* Animated Badge */}
+                    <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-cyan-400 px-1 text-[10px] font-bold text-black">
+                      {cartCount}
+                    </span>
+
+                    {/* Pulse effect */}
+                    <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-cyan-400 animate-ping opacity-30"></span>
+                  </Link>
+                </MotionDiv>
+
+                <MotionDiv whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                  <label
+                    htmlFor="mobile-nav-drawer"
+                    className="btn btn-ghost btn-circle"
+                    aria-label="Open mobile menu"
+                  >
+                    <FiMenu size={18} />
+                  </label>
+                </MotionDiv>
+              </div>
+            </div>
+
+            <div className="drawer-side z-50">
+              <label htmlFor="mobile-nav-drawer" aria-label="close sidebar" className="drawer-overlay" />
+              <div className="menu min-h-full w-80 max-w-[90vw] gap-5 bg-slate-950/95 p-5 text-base-content backdrop-blur-xl">
+                <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                  <Link to="/" className="text-xl font-black tracking-wide text-white">
+                    Hard<span className="text-cyan-400">Worx</span>
+                  </Link>
+                  <label htmlFor="mobile-nav-drawer" className="btn btn-ghost btn-circle">
+                    <FiX size={18} />
+                  </label>
+                </div>
+
+                <div className="space-y-2">
+                  {mobileNavItems.map((item) => (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      className="flex items-center rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-slate-100 transition hover:border-cyan-400/40 hover:bg-cyan-400/10"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+
+                <Link
+                  to="/cart"
+                  className="flex items-center justify-between rounded-xl border border-cyan-400/20 bg-cyan-400/10 px-4 py-3 font-semibold text-cyan-300 transition hover:bg-cyan-400/15"
+                >
+                  <span>Cart</span>
+                  <span className="rounded-full bg-cyan-400 px-2 py-0.5 text-xs font-bold text-black">
+                    {cartCount}
+                  </span>
+                </Link>
+
+                {user && role === "admin" && (
+                  <Link
+                    to="/admin"
+                    className="flex items-center rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-slate-100 transition hover:border-yellow-400/40 hover:bg-yellow-400/10"
+                  >
+                    Admin Dashboard
+                  </Link>
+                )}
+
+                <div className="mt-auto border-t border-white/10 pt-4">
+                  {!user ? (
+                    <div className="grid gap-3">
+                      <Link
+                        className="rounded-xl bg-linear-to-r from-violet-500 to-cyan-500 px-4 py-3 text-center font-semibold text-white"
+                        to="/login"
+                      >
+                        Login
+                      </Link>
+                      <Link
+                        className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center font-semibold text-slate-100"
+                        to="/signup"
+                      >
+                        Create account
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="grid gap-3">
+                      <Link
+                        className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center font-semibold text-slate-100"
+                        to="/profile"
+                      >
+                        Profile
+                      </Link>
+                      <button
+                        onClick={() => {
+                          logout();
+                        }}
+                        className="rounded-xl border border-rose-400/20 bg-rose-400/10 px-4 py-3 font-semibold text-rose-300 transition hover:bg-rose-400/15"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Desktop Cart */}
+          <MotionDiv className="hidden lg:block" whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+            <Link
+              to="/cart"
               className="btn btn-ghost btn-circle relative"
-              aria-label="Open cart"
+              aria-label="Go to cart"
             >
               <FiShoppingCart size={18} />
 
-              {/* Animated Badge */}
               <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-cyan-400 px-1 text-[10px] font-bold text-black">
                 {cartCount}
               </span>
 
-              {/* Pulse effect */}
               <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-cyan-400 animate-ping opacity-30"></span>
-            </label>
+            </Link>
           </MotionDiv>
 
           {/* User Dropdown */}
-          <div className="dropdown dropdown-end">
+          <div className="dropdown dropdown-end hidden lg:block">
             <MotionDiv whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
               <button tabIndex={0} className="btn btn-ghost btn-circle">
                 <FiUser size={18} />

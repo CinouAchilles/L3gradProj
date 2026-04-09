@@ -1,4 +1,3 @@
-import { redis } from "../lib/redis.js";
 import cloudinary from "../lib/cloudinary.js";
 import Product from "../models/product.model.js";
 import mongoose from "mongoose";
@@ -36,28 +35,8 @@ export const getProductById = async (req, res) => {
 
 export const getFeaturedProducts = async (req, res) => {
   try {
-    const cachedFeaturedProducts = await redis.get("featuredProducts");
-    if (cachedFeaturedProducts) {
-      try {
-        const featuredProducts =
-          typeof cachedFeaturedProducts === "string"
-            ? JSON.parse(cachedFeaturedProducts)
-            : cachedFeaturedProducts;
-
-        return res.json({ products: featuredProducts });
-      } catch (parseError) {
-        console.warn("Invalid featuredProducts cache, rebuilding from DB");
-      }
-    }
-
     const featuredProducts = await Product.find({ isFeatured: true }).lean();
-    if (featuredProducts.length === 0) {
-      return res.json({ products: [] });
-    }
-    //store in redis cache for faster access next time
-    await redis.set("featuredProducts", JSON.stringify(featuredProducts));
-
-    res.json({ products: featuredProducts });
+    return res.json({ products: featuredProducts });
   } catch (error) {
     console.error("Error fetching featured products:", error);
     res.status(500).json({ message: "Error fetching featured products" });
@@ -136,7 +115,6 @@ export const createProduct = async (req, res) => {
     });
 
     await product.save();
-  await updateFeaturedFromCache();
 
     res.status(201).json({ message: "Product created successfully", product });
   } catch (error) {
@@ -226,7 +204,6 @@ export const updateProduct = async (req, res) => {
     }
 
     await product.save();
-    await updateFeaturedFromCache();
 
     return res.status(200).json({
       message: "Product updated successfully",
@@ -274,7 +251,6 @@ export const deleteProduct = async (req, res) => {
     }
 
     await Product.findByIdAndDelete(id);
-  await updateFeaturedFromCache();
 
     res.json({ message: "Product deleted successfully" });
   } catch (error) {
@@ -341,7 +317,6 @@ export const toggleFeaturedStatus = async (req, res) => {
     }
     product.isFeatured = !product.isFeatured;
     await product.save();
-    await updateFeaturedFromCache();
     res.json({ message: "Featured status updated successfully", product });
   } catch (error) {
     console.error("Error updating featured status:", error);
@@ -352,11 +327,3 @@ export const toggleFeaturedStatus = async (req, res) => {
   }
 };
 
-async function updateFeaturedFromCache() {
-  try {
-    const featuredProducts = await Product.find({ isFeatured: true }).lean();
-    await redis.set("featuredProducts", JSON.stringify(featuredProducts));
-  } catch (error) {
-    console.log("error in update the cache function ");
-  }
-}
