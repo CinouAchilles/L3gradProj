@@ -7,6 +7,7 @@ import Footer from "../../components/home/Footer";
 import { useLocation } from "react-router-dom";
 import { CartDrawer } from "../cart/CartDrawer";
 import FeaturedProducts from "../../components/home/FeaturedProducts";
+import AIAssistantWidget from "../../components/common/AIAssistantWidget.jsx";
 
 function HomeLayout({ children }) {
   const { pathname } = useLocation();
@@ -45,6 +46,7 @@ function HomeLayout({ children }) {
       </div>
 
       <CartDrawer />
+      <AIAssistantWidget />
       <Toaster
         position="top-center"
         toastOptions={{

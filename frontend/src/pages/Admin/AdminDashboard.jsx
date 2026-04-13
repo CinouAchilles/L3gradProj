@@ -607,7 +607,7 @@ export default function AdminDashboard() {
 
       {tab === "orders" && (
         <AnimatedGlassPanel className="overflow-x-auto p-2">
-          <table className="w-full min-w-[1200px] text-sm text-slate-200">
+          <table className="w-full min-w-300 text-sm text-slate-200">
             <thead>
               <tr className="text-left text-xs uppercase tracking-[0.16em] text-slate-400">
                 <th className="px-4 py-3">Code</th>
@@ -656,8 +656,13 @@ export default function AdminDashboard() {
                     <td className="px-4 py-3">{o.customer.phone}</td>
 
                     {/* Address */}
-                    <td className="px-4 py-3 max-w-50 truncate">
-                      {o.customer.address}
+                    <td className="px-4 py-3 align-top">
+                      <div
+                        title={o.customer.address}
+                        className="max-h-20 max-w-56 overflow-y-auto whitespace-normal wrap-break-word rounded-lg border border-white/5 bg-white/5 px-3 py-2 text-xs leading-5 text-slate-200"
+                      >
+                        {o.customer.address}
+                      </div>
                     </td>
 
                     {/* Postal Code */}
@@ -903,9 +908,10 @@ export default function AdminDashboard() {
           )}
 
           <div className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-900/60 p-2 backdrop-blur-xl">
-            <table className="w-full min-w-170 text-sm text-slate-200">
+            <table className="w-full min-w-190 text-sm text-slate-200">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-[0.16em] text-slate-400">
+                  <th className="px-4 py-3">Photo</th>
                   <th className="px-4 py-3">Product</th>
                   <th className="px-4 py-3">Category</th>
                   <th className="px-4 py-3">Price</th>
@@ -916,6 +922,16 @@ export default function AdminDashboard() {
               <tbody>
                 {products.map((p) => (
                   <tr key={p._id} className="border-t border-white/8">
+                    <td className="px-4 py-3">
+                      <div className="h-11 w-11 overflow-hidden rounded-lg border border-white/10 bg-slate-800/60">
+                        <img
+                          src={p.imageFile || p.imageUrl}
+                          alt={p.name}
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                    </td>
                     <td className="px-4 py-3">
                       {/* <p className="font-medium">{p.name}</p> */}
                       <Link to={`/product/${p._id}`} className="text-cyan-400 hover:underline">

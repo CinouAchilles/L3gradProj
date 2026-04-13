@@ -37,6 +37,26 @@ export const useCartStore = create((set, get) => ({
     }
   },
 
+  addManyToCart: async (productIds = []) => {
+    const validIds = Array.from(new Set(productIds.filter(Boolean)));
+    if (!validIds.length) return false;
+
+    set({ isUpdatingCart: true });
+    try {
+      for (const id of validIds) {
+        await axios.post("/cart/add", { productId: id });
+      }
+      await get().fetchCart();
+      toast.success("Selected AI build added to cart");
+      return true;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to add AI build to cart");
+      return false;
+    } finally {
+      set({ isUpdatingCart: false });
+    }
+  },
+
   updateQuantity: async (productId, quantity) => {
     set({ isUpdatingCart: true });
     try {

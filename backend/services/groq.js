@@ -1,4 +1,7 @@
-export const generateResponse = async (prompt) => {
+export const generateChatCompletion = async (
+  messages,
+  { temperature = 0.4, model = "llama-3.1-8b-instant" } = {},
+) => {
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -6,9 +9,9 @@ export const generateResponse = async (prompt) => {
       Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
     },
     body: JSON.stringify({
-      model: "llama-3.1-8b-instant",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.7,
+      model,
+      messages,
+      temperature,
     }),
   });
 

@@ -47,6 +47,7 @@ app.get("/api/health", (req, res) => {
   res.status(200).json({ message: "API is running" });
 });
 
+app.use("/api/auth", authRouter);
 app.use("/api/ai", aiRouter);
 app.use("/api/products", productRouter);
 app.use("/api/cart", cartRouter);

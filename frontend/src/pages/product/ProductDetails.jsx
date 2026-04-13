@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { HiArrowRight, HiOutlineShoppingCart } from "react-icons/hi";
@@ -7,6 +7,7 @@ import { toast } from "react-hot-toast";
 import { useProductStore } from "../../stores/useProductStore";
 import { useCartStore } from "../../stores/useCartStore";
 import { useUserStore } from "../../stores/useUserStore";
+import axios from "../../lib/axios.js";
 
 const MotionDiv = motion.div;
 
@@ -22,6 +23,9 @@ export default function ProductDetails() {
   } = useProductStore();
   const { cartItems, addToCart, isUpdatingCart } = useCartStore();
   const { user } = useUserStore();
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiReply, setAiReply] = useState("");
+  const [isAskingAI, setIsAskingAI] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -54,6 +58,29 @@ export default function ProductDetails() {
 
   const reachedLimit = inCartQty >= 3;
   const isGuest = !user;
+  const selectedProductIds = useMemo(
+    () => cartItems.map((item) => item.product?._id).filter(Boolean),
+    [cartItems],
+  );
+
+  const askAI = async (promptText) => {
+    const finalPrompt = (promptText || aiPrompt || "").trim();
+    if (!finalPrompt || isAskingAI) return;
+
+    setIsAskingAI(true);
+    try {
+      const res = await axios.post("/ai/chat", {
+        prompt: finalPrompt,
+        selectedProductIds: Array.from(new Set([...selectedProductIds, product._id])),
+      });
+      setAiReply(res.data?.reply || "No response from AI assistant.");
+      if (!promptText) setAiPrompt("");
+    } catch (error) {
+      toast.error(error.response?.data?.error || "AI request failed");
+    } finally {
+      setIsAskingAI(false);
+    }
+  };
 
     const specs = useMemo(
     () => ({
@@ -220,6 +247,66 @@ export default function ProductDetails() {
               <FiPackage className="mb-2 h-5 w-5 text-cyan-300" />
               Carefully packed
             </div>
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-cyan-300/20 bg-cyan-400/5 p-4">
+            <p className="text-xs uppercase tracking-[0.22em] text-cyan-300">AI Advisor</p>
+            <p className="mt-2 text-sm text-slate-300">
+              Ask about this part, compatibility with your cart, or bottleneck risks.
+            </p>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  askAI(
+                    `Is ${product.name} a good choice for a ${product.category} build? Give pros, cons, and alternatives from this store.`,
+                  )
+                }
+                disabled={isAskingAI}
+                className="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-200 disabled:opacity-50"
+              >
+                Evaluate This Part
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  askAI(
+                    `Check compatibility and possible bottlenecks between my selected parts and ${product.name}.`,
+                  )
+                }
+                disabled={isAskingAI}
+                className="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-200 disabled:opacity-50"
+              >
+                Check Bottleneck
+              </button>
+            </div>
+
+            <div className="mt-3 flex items-center gap-2">
+              <input
+                value={aiPrompt}
+                onChange={(event) => setAiPrompt(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") askAI();
+                }}
+                placeholder="Ask AI about this product..."
+                className="h-10 flex-1 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white placeholder:text-slate-500 focus:border-cyan-400/40 focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => askAI()}
+                disabled={isAskingAI || !aiPrompt.trim()}
+                className="rounded-xl bg-linear-to-r from-violet-500 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                {isAskingAI ? "Thinking..." : "Ask"}
+              </button>
+            </div>
+
+            {aiReply && (
+              <div className="mt-3 whitespace-pre-wrap rounded-xl border border-white/10 bg-slate-950/50 p-3 text-sm text-slate-200">
+                {aiReply}
+              </div>
+            )}
           </div>
         </MotionDiv>
       </div>
