@@ -218,7 +218,7 @@ export function Navbar() {
                   </Link>
                 )}
 
-                <div className="mt-auto border-t border-white/10 pt-4">
+                <div className="mt-auto border-t border-white/10 py-4">
                   {!user ? (
                     <div className="grid gap-3">
                       <Link

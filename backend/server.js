@@ -9,8 +9,11 @@ import cartRouter from "./routes/cart.routes.js";
 import analyticsRouter from "./routes/analytics.routes.js";
 import orderRouter from "./routes/order.routes.js";
 import path from "path";
+import aiRouter from "./routes/ai.routes.js";
 
 dotenv.config();
+
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -44,7 +47,7 @@ app.get("/api/health", (req, res) => {
   res.status(200).json({ message: "API is running" });
 });
 
-app.use("/api/auth", authRouter);
+app.use("/api/ai", aiRouter);
 app.use("/api/products", productRouter);
 app.use("/api/cart", cartRouter);
 app.use("/api/analytics", analyticsRouter);
