@@ -3,7 +3,7 @@ import { chatWithAI } from "../controllers/ai.controller.js";
 
 const aiRoutes = express.Router();
 
-aiRoutes.get('/chat' , chatWithAI);
+aiRoutes.post('/chat' , chatWithAI);
 
 
 export default aiRoutes;
