@@ -66,6 +66,28 @@ export const deleteWholeProductFromCart = async (req, res) => {
   }
 };
 
+export const deleteAllProductsOfCart =  async(req, res)=>{
+  try {
+
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ message: "User is not authenticated" });
+    }
+
+    user.cartItems = [];
+    await user.save();
+    const cart = await buildPopulatedCartResponse(user);
+    return res.json({
+      message: "Products deleted from cart successfully",
+      cart,
+    });
+
+  } catch (error) {
+    console.log("Error deleting the whole cart:", error.message);
+    return res.status(500).json({message: "Error deleting the all the products from the cart"})
+  }
+}
+
 export const updateTheQuantityOfProductInCart = async (req, res) => {
   try {
     const { id: productId } = req.params;

@@ -19,7 +19,6 @@ import {
   FiClock,
   FiPackage,
 } from "react-icons/fi";
-import downloadInvoicePdf from "../../lib/downloadInvoicePdf";
 
 const MotionDiv = motion.div;
 
@@ -31,6 +30,7 @@ export default function Cart() {
     fetchCart,
     updateQuantity,
     removeFromCart,
+    clearCartServer,
   } = useCartStore();
 
   useEffect(() => {
@@ -329,17 +329,11 @@ export default function Cart() {
                   Proceed to Checkout <HiArrowRight className="h-4 w-4" />
                 </Link>
                 <button
-                  onClick={() =>
-                    downloadInvoicePdf({
-                      cartItems: validCartItems,
-                      subtotal,
-                      shipping,
-                      total,
-                    })
-                  }
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-slate-200 transition hover:border-cyan-400/30 hover:text-cyan-300"
+                  onClick={clearCartServer}
+                  disabled={isUpdatingCart}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-6 py-3 text-sm font-semibold text-rose-300 transition hover:bg-rose-500/20 hover:text-rose-200 disabled:opacity-50"
                 >
-                  Download PDF Preview <HiArrowRight className="h-4 w-4" />
+                  Clear Cart
                 </button>
                 <Link
                   to="/shop"

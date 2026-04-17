@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { HiArrowRight, HiOutlineCheckCircle } from "react-icons/hi";
 import { useCartStore } from "../../stores/useCartStore";
 import { useOrderStore } from "../../stores/useOrderStore";
+import InvoiceActions from "../../components/common/InvoiceActions.jsx";
 
 const MotionDiv = motion.div;
 
@@ -21,6 +22,7 @@ export default function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState("cash_on_delivery");
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [trackingNumber, setTrackingNumber] = useState("");
+  const [createdOrder, setCreatedOrder] = useState(null);
 
   useEffect(() => {
     fetchCart();
@@ -41,6 +43,7 @@ export default function Checkout() {
     const result = await createOrder({ customer, paymentMethod });
     if (!result.success) return;
 
+    setCreatedOrder(result.order || null);
     setTrackingNumber(result.order?.trackingNumber || "");
     setOrderSuccess(true);
     fetchCart();
@@ -195,6 +198,11 @@ export default function Checkout() {
               >
                 Track Order
               </Link>
+              <InvoiceActions
+                order={createdOrder}
+                className="justify-center gap-3"
+                buttonClassName="px-5 py-2.5"
+              />
             </div>
           )}
         </MotionDiv>

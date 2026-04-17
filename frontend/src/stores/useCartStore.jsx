@@ -14,7 +14,8 @@ export const useCartStore = create((set, get) => ({
       set({ cartItems: res.data.cart || [] });
     } catch (error) {
       set({ cartItems: [] });
-      if (error.response?.status !== 401) {
+      const status = error.response?.status;
+      if (status !== 401 && status !== 403) {
         toast.error(error.response?.data?.message || "Failed to load cart");
       }
     } finally {
@@ -87,6 +88,21 @@ export const useCartStore = create((set, get) => ({
       return true;
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to remove product");
+      return false;
+    } finally {
+      set({ isUpdatingCart: false });
+    }
+  },
+
+  clearCartServer: async () => {
+    set({ isUpdatingCart: true });
+    try {
+      await axios.delete("/cart/delete-all");
+      set({ cartItems: [] });
+      toast.success("Cart cleared successfully");
+      return true;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to clear cart");
       return false;
     } finally {
       set({ isUpdatingCart: false });

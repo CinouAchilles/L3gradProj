@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { HiOutlineSearch, HiOutlinePrinter, HiOutlineReceiptTax } from "react-icons/hi";
+import { HiOutlineSearch, HiOutlineReceiptTax } from "react-icons/hi";
 import { FiCheckCircle, FiPackage, FiTruck } from "react-icons/fi";
 import toast from "react-hot-toast";
 import { useOrderStore } from "../../stores/useOrderStore.jsx";
 import LoadingSpinner from "../../components/common/LoadingSpinner.jsx";
+import InvoiceActions from "../../components/common/InvoiceActions.jsx";
 
 const MotionDiv = motion.div;
 const MotionH1 = motion.h1;
@@ -69,10 +70,6 @@ export default function TrackOrder() {
 
     const foundOrder = await trackOrder(trimmed);
     setOrder(foundOrder);
-  };
-
-  const handlePrint = () => {
-    window.print();
   };
 
   const orderItems = useMemo(() => order?.items || [], [order]);
@@ -282,14 +279,7 @@ export default function TrackOrder() {
                     </p>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handlePrint}
-                    className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-cyan-400/30 hover:bg-cyan-400/10 hover:text-cyan-200"
-                  >
-                    <HiOutlinePrinter className="h-4 w-4" />
-                    Invoice
-                  </button>
+                  <InvoiceActions order={order} />
                 </div>
               </MotionDiv>
             )}
