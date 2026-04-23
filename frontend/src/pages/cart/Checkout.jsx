@@ -79,7 +79,10 @@ export default function Checkout() {
         </h1>
       </MotionDiv>
 
-      <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1.05fr_0.95fr]">
+      <div 
+      // className="grid grid-cols-1 gap-8 xl:grid-cols-[1.05fr_0.95fr]"
+      className={orderSuccess ? "flex flex-col items-center gap-10" : "grid grid-cols-1 gap-8 xl:grid-cols-[1.05fr_0.95fr]"}
+      >
         <MotionDiv
           initial={{ opacity: 0, x: -18 }}
           animate={{ opacity: 1, x: 0 }}
@@ -212,9 +215,9 @@ export default function Checkout() {
           animate={{ opacity: 1, x: 0 }}
           className="space-y-4 xl:sticky xl:top-24 xl:self-start"
         >
-          <div className="rounded-3xl border border-white/10 bg-slate-900/60 p-6 backdrop-blur-xl">
+          {!orderSuccess ? (<div className="rounded-3xl border border-white/10 bg-slate-900/60 p-6 backdrop-blur-xl">
             <h2 className="font-display text-2xl font-bold text-white">
-              Order Summary
+              Order Summaryyyyyy
             </h2>
             <div className="mt-6 space-y-3">
               {cartItems.map((item) => (
@@ -258,7 +261,7 @@ export default function Checkout() {
                 </span>
               </div>
             </div>
-          </div>
+          </div>): null}
         </MotionDiv>
       </div>
     </div>
